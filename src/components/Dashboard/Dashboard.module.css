@@ -237,3 +237,71 @@
 @media (min-width: 768px) {
     /* If we want 2-column stats on larger screens, though the spreadsheet look is vertical */
 }
+
+/* Accordion Styles */
+.accordionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding-bottom: 0.5rem; /* Visual separation if open? No, let's keep it tight if closed */
+}
+
+.accordionTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.chevron {
+  font-size: 0.75rem;
+  transition: transform 0.3s ease;
+  color: var(--text-secondary);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.accordionContent {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.3s ease-out;
+}
+
+.badge {
+  background-color: var(--primary);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Improved Form Grid for Accordion */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.cancelLink {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-top: 0.5rem;
+    text-decoration: underline;
+}
+.cancelLink:hover {
+    color: var(--foreground);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

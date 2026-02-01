@@ -9,7 +9,7 @@ import { auth } from "@/lib/firebase/firebase";
 import DailyInput from "@/components/Dashboard/DailyInput";
 import StatsSummary from "@/components/Dashboard/StatsSummary";
 import HistoryTable from "@/components/Dashboard/HistoryTable";
-import GoalSettings from "@/components/Dashboard/GoalSettings";
+import SetupAccordion from "@/components/Dashboard/SetupAccordion";
 import styles from "@/components/Dashboard/Dashboard.module.css";
 
 export default function DashboardPage() {
@@ -99,6 +99,9 @@ export default function DashboardPage() {
 
     if (!user) return null; // Should redirect
 
+    // Logic for new flow
+    const isSetup = !!userSettings;
+
     return (
         <div className={styles.dashboardContainer}>
             <header className={styles.header}>
@@ -108,32 +111,41 @@ export default function DashboardPage() {
                 </button>
             </header>
 
-            <div className={styles.grid}>
-                {/* Left Column: Stats & Settings */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <StatsSummary entries={entries} settings={userSettings} />
-                    <GoalSettings
-                        userId={user.uid}
-                        existingSettings={userSettings}
-                        onSave={handleSettingsSaved}
-                    />
-                </div>
+            {/* Always show Setup Accordion at top */}
+            <SetupAccordion
+                userId={user.uid}
+                existingSettings={userSettings}
+                onSave={handleSettingsSaved}
+            />
 
-                {/* Right Column: Input & History */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <DailyInput
-                        userId={user.uid}
-                        onEntryAdded={handleEntrySaved}
-                        initialData={editingEntry}
-                        onCancel={handleCancelEdit}
-                    />
-                    <HistoryTable
-                        entries={entries}
-                        onDelete={handleDeleteEntry}
-                        onEdit={handleEditEntry}
-                    />
+            {/* Only show the rest if setup is complete */}
+            {isSetup ? (
+                <div className={styles.grid}>
+                    {/* Left Column: Stats */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <StatsSummary entries={entries} settings={userSettings} />
+                    </div>
+
+                    {/* Right Column: Input & History */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <DailyInput
+                            userId={user.uid}
+                            onEntryAdded={handleEntrySaved}
+                            initialData={editingEntry}
+                            onCancel={handleCancelEdit}
+                        />
+                        <HistoryTable
+                            entries={entries}
+                            onDelete={handleDeleteEntry}
+                            onEdit={handleEditEntry}
+                        />
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
+                    <p>Please complete the initial setup above to start tracking.</p>
+                </div>
+            )}
         </div>
     );
 }

@@ -47,9 +47,11 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
 
 export const updateUserSettings = async (userId: string, settings: Partial<UserSettings>) => {
     const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
+    // Use setDoc with merge: true to create the document if it doesn't exist, 
+    // or update it if it does. This supports the initial setup flow for new users.
+    await setDoc(userRef, {
         settings: settings
-    });
+    }, { merge: true });
 };
 
 // Entry Helpers
