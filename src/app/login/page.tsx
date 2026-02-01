@@ -1,0 +1,58 @@
+"use client";
+
+import { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase/firebase";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import styles from "./login.module.css";
+
+export default function LoginPage() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const router = useRouter();
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            router.push("/dashboard");
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    return (
+        <div className={styles.container}>
+            <div className={styles.card}>
+                <h1 className={styles.title}>Login</h1>
+                {error && <p className={styles.error}>{error}</p>}
+                <form onSubmit={handleLogin} className={styles.form}>
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={styles.input}
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={styles.input}
+                        required
+                    />
+                    <button type="submit" className={styles.button}>
+                        Log In
+                    </button>
+                </form>
+                <p className={styles.footer}>
+                    Don't have an account? <Link href="/signup">Sign up</Link>
+                </p>
+            </div>
+        </div>
+    );
+}
