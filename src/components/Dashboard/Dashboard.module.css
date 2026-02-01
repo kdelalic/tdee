@@ -144,3 +144,25 @@
 .table tr:last-child td {
   border-bottom: none;
 }
+
+.settingsForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+@media (min-width: 768px) {
+    /* If we want 2-column stats on larger screens, though the spreadsheet look is vertical */
+}

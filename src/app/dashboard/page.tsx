@@ -3,20 +3,20 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useRouter } from "next/navigation";
-import { getEntries, DailyEntry, deleteDailyEntry, updateDailyEntry } from "@/lib/firebase/firestore";
-import { calculateTDEE, TDEEResult } from "@/lib/tdee-calculations";
+import { getEntries, DailyEntry, deleteDailyEntry, updateDailyEntry, getUserSettings, UserSettings } from "@/lib/firebase/firestore";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/firebase";
 import DailyInput from "@/components/Dashboard/DailyInput";
-import StatsOverview from "@/components/Dashboard/StatsOverview";
+import StatsSummary from "@/components/Dashboard/StatsSummary";
 import HistoryTable from "@/components/Dashboard/HistoryTable";
+import GoalSettings from "@/components/Dashboard/GoalSettings";
 import styles from "@/components/Dashboard/Dashboard.module.css";
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
     const [entries, setEntries] = useState<DailyEntry[]>([]);
-    const [stats, setStats] = useState<TDEEResult | null>(null);
+    const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
     const [loadingData, setLoadingData] = useState(true);
     const [editingEntry, setEditingEntry] = useState<DailyEntry | null>(null);
 
@@ -31,10 +31,12 @@ export default function DashboardPage() {
     const refreshData = async () => {
         if (!user) return;
         try {
-            const data = await getEntries(user.uid);
+            const [data, settings] = await Promise.all([
+                getEntries(user.uid),
+                getUserSettings(user.uid)
+            ]);
             setEntries(data);
-            const calculatedStats = calculateTDEE(data);
-            setStats(calculatedStats);
+            setUserSettings(settings);
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -74,6 +76,10 @@ export default function DashboardPage() {
         refreshData();
     };
 
+    const handleSettingsSaved = () => {
+        refreshData();
+    };
+
     const handleCancelEdit = () => {
         setEditingEntry(null);
     };
@@ -103,20 +109,31 @@ export default function DashboardPage() {
             </header>
 
             <div className={styles.grid}>
-                <StatsOverview stats={stats} />
-                <DailyInput
-                    userId={user.uid}
-                    onEntryAdded={handleEntrySaved}
-                    initialData={editingEntry}
-                    onCancel={handleCancelEdit}
-                />
-            </div>
+                {/* Left Column: Stats & Settings */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <StatsSummary entries={entries} settings={userSettings} />
+                    <GoalSettings
+                        userId={user.uid}
+                        existingSettings={userSettings}
+                        onSave={handleSettingsSaved}
+                    />
+                </div>
 
-            <HistoryTable
-                entries={entries}
-                onDelete={handleDeleteEntry}
-                onEdit={handleEditEntry}
-            />
+                {/* Right Column: Input & History */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <DailyInput
+                        userId={user.uid}
+                        onEntryAdded={handleEntrySaved}
+                        initialData={editingEntry}
+                        onCancel={handleCancelEdit}
+                    />
+                    <HistoryTable
+                        entries={entries}
+                        onDelete={handleDeleteEntry}
+                        onEdit={handleEditEntry}
+                    />
+                </div>
+            </div>
         </div>
     );
 }

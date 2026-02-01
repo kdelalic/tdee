@@ -17,8 +17,13 @@ import {
 
 export interface UserSettings {
     goal: 'cut' | 'bulk' | 'maintain';
-    startWeight: number;
     activityLevel?: number; // Optional text description or multiplier
+    // New Fields
+    units: 'lb' | 'kg';
+    startDate: string; // YYYY-MM-DD
+    startingWeight: number;
+    goalWeight: number;
+    weeklyGoal: number; // e.g. -1.0 for lose 1lb/week
 }
 
 export interface DailyEntry {
