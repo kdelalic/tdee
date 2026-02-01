@@ -14,7 +14,13 @@ interface DailyInputProps {
 export default function DailyInput({ userId, onEntryAdded, initialData, onCancel }: DailyInputProps) {
     const [weight, setWeight] = useState("");
     const [calories, setCalories] = useState("");
-    const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+    const [date, setDate] = useState(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -25,7 +31,11 @@ export default function DailyInput({ userId, onEntryAdded, initialData, onCancel
         } else {
             setWeight("");
             setCalories("");
-            setDate(new Date().toISOString().split("T")[0]);
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            setDate(`${year}-${month}-${day}`);
         }
     }, [initialData]);
 
