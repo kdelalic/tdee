@@ -74,13 +74,12 @@ export default function DailyInput({ userId, onEntryAdded, initialData, onCancel
 
     return (
         <div className={styles.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className={styles.header}>
                 <h2 className={styles.cardTitle}>{initialData ? "Edit Daily Entry" : "Add Daily Entry"}</h2>
                 {initialData && onCancel && (
                     <button
                         onClick={(e) => { e.preventDefault(); onCancel(); }}
-                        className={styles.secondaryButton} // Assuming this class exists or needs to be added to CSS, or I use inline style or existing button style
-                        style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
+                        className={styles.secondaryButton}
                     >
                         Cancel
                     </button>

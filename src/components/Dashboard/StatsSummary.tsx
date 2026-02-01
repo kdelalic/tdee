@@ -26,7 +26,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
     const isLossGoal = settings.weeklyGoal < 0;
 
     return (
-        <div className={styles.card} style={{ backgroundColor: '#eefcfc' }}> {/* Light blueish tint like spreadsheet */}
+        <div className={`${styles.card} ${styles.statsCard}`}>
             <h2 className={styles.cardTitle}>Current Body Stats</h2>
 
             <div className={styles.statsGrid}>
@@ -39,7 +39,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
 
                 <div className={styles.statRow}>
                     <span className={styles.statLabel}>You've {isLossGoal ? "Lost" : "Gained"}:</span>
-                    <span className={styles.statValue} style={{ color: isLossGoal ? 'red' : 'green' }}>
+                    <span className={`${styles.statValue} ${isLossGoal ? styles.textSuccess : styles.textError}`}>
                         {isLossGoal ? stats.totalLost : -stats.totalLost} <small>{settings.units}</small>
                     </span>
                 </div>
@@ -51,11 +51,11 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                     </span>
                 </div>
 
-                <hr style={{ margin: '0.5rem 0', opacity: 0.2 }} />
+                <hr className={styles.divider} />
 
                 <div className={styles.statRow}>
                     <span className={styles.statLabel}>Target Daily Calories:</span>
-                    <span className={styles.statValue} style={{ fontWeight: 'bold' }}>
+                    <span className={`${styles.statValue} ${styles.textPrimary}`}>
                         {stats.targetCalories} <small>Cal/Day</small>
                     </span>
                 </div>
@@ -67,7 +67,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                     </span>
                 </div>
 
-                <div className={styles.statRow} style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#555' }}>
+                <div className={styles.statFooter}>
                     {stats.weeksToGoal} Weeks until you reach your goal weight
                 </div>
             </div>

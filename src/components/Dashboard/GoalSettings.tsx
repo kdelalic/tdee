@@ -111,7 +111,7 @@ export default function GoalSettings({ userId, existingSettings, onSave }: GoalS
 
                 <div className={styles.inputGroup}>
                     <label>Weekly Goal ({units}/wk)</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div className={styles.inputWithHelper}>
                         {/* Helper to make it intuitive: "Lose" or "Gain" */}
                         <input
                             type="number"
@@ -122,7 +122,7 @@ export default function GoalSettings({ userId, existingSettings, onSave }: GoalS
                             placeholder="-1.0 for loss, 0.5 for gain"
                             className={styles.input}
                         />
-                        <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                        <span className={styles.helperText}>
                             (Neg = Loss)
                         </span>
                     </div>
@@ -131,8 +131,7 @@ export default function GoalSettings({ userId, existingSettings, onSave }: GoalS
                 <button
                     type="submit"
                     disabled={loading}
-                    className={styles.primaryButton}
-                    style={{ marginTop: '1rem', width: '100%' }}
+                    className={`${styles.primaryButton} ${styles.fullWidth}`}
                 >
                     {loading ? "Saving..." : "Save Settings"}
                 </button>
