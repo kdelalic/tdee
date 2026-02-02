@@ -10,9 +10,9 @@ import DailyInput from "@/components/Dashboard/DailyInput";
 import StatsSummary from "@/components/Dashboard/StatsSummary";
 import ChartsOverview from "@/components/Dashboard/ChartsOverview";
 import HistoryTable from "@/components/Dashboard/HistoryTable";
-import SetupAccordion from "@/components/Dashboard/SetupAccordion";
 import EditEntryModal from "@/components/Dashboard/EditEntryModal";
 import styles from "@/components/Dashboard/Dashboard.module.css";
+import Link from "next/link";
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
@@ -39,6 +39,11 @@ export default function DashboardPage() {
             ]);
             setEntries(data);
             setUserSettings(settings);
+
+            // Redirect to settings if no setup completed
+            if (!settings) {
+                router.push("/dashboard/settings");
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -76,10 +81,6 @@ export default function DashboardPage() {
         refreshData();
     };
 
-    const handleSettingsSaved = () => {
-        refreshData();
-    };
-
     const handleCloseModal = () => {
         setEditingEntry(null);
     };
@@ -89,7 +90,7 @@ export default function DashboardPage() {
         router.push("/");
     };
 
-    if (loading || (loadingData && user)) { // Show loading until auth check AND data fetch are done
+    if (loading || (loadingData && user)) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 Loading...
@@ -97,56 +98,59 @@ export default function DashboardPage() {
         );
     }
 
-    if (!user) return null; // Should redirect
+    if (!user) return null;
 
-    // Logic for new flow
-    const isSetup = !!userSettings;
+    // If no settings, we'll redirect (handled in refreshData)
+    if (!userSettings) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                Redirecting to setup...
+            </div>
+        );
+    }
 
     return (
         <div className={styles.dashboardContainer}>
             <header className={styles.header}>
                 <h1 className={styles.title}>Dashboard</h1>
-                <button onClick={handleLogout} className={styles.logoutButton}>
-                    Log Out
-                </button>
+                <div className={styles.headerActions}>
+                    <Link href="/tips" className={styles.tipsButton}>
+                        💡 Tips
+                    </Link>
+                    <Link href="/how-it-works" className={styles.tipsButton}>
+                        📊 How It Works
+                    </Link>
+                    <Link href="/dashboard/settings" className={styles.settingsLink} title="Settings">
+                        ⚙️
+                    </Link>
+                    <button onClick={handleLogout} className={styles.logoutButton}>
+                        Log Out
+                    </button>
+                </div>
             </header>
 
-            {/* Always show Setup Accordion at top */}
-            <SetupAccordion
-                userId={user.uid}
-                existingSettings={userSettings}
-                onSave={handleSettingsSaved}
-            />
-
-            {/* Only show the rest if setup is complete */}
-            {isSetup ? (
-                <div className={styles.grid}>
-                    {/* Left Column: Stats */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <StatsSummary entries={entries} settings={userSettings} />
-                    </div>
-
-                    {/* Right Column: Input, Charts, History */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <DailyInput
-                            userId={user.uid}
-                            onEntryAdded={handleEntrySaved}
-                        />
-
-                        <ChartsOverview entries={entries} settings={userSettings} />
-
-                        <HistoryTable
-                            entries={entries}
-                            onDelete={handleDeleteEntry}
-                            onEdit={handleEditEntry}
-                        />
-                    </div>
+            <div className={styles.grid}>
+                {/* Left Column: Stats */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <StatsSummary entries={entries} settings={userSettings} />
                 </div>
-            ) : (
-                <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
-                    <p>Please complete the initial setup above to start tracking.</p>
+
+                {/* Right Column: Input, Charts, History */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <DailyInput
+                        userId={user.uid}
+                        onEntryAdded={handleEntrySaved}
+                    />
+
+                    <ChartsOverview entries={entries} settings={userSettings} />
+
+                    <HistoryTable
+                        entries={entries}
+                        onDelete={handleDeleteEntry}
+                        onEdit={handleEditEntry}
+                    />
                 </div>
-            )}
+            </div>
 
             {/* Edit Entry Modal */}
             {editingEntry && (
