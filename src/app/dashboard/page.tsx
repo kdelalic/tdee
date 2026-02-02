@@ -8,6 +8,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/firebase";
 import DailyInput from "@/components/Dashboard/DailyInput";
 import StatsSummary from "@/components/Dashboard/StatsSummary";
+import ChartsOverview from "@/components/Dashboard/ChartsOverview";
 import HistoryTable from "@/components/Dashboard/HistoryTable";
 import SetupAccordion from "@/components/Dashboard/SetupAccordion";
 import styles from "@/components/Dashboard/Dashboard.module.css";
@@ -126,7 +127,7 @@ export default function DashboardPage() {
                         <StatsSummary entries={entries} settings={userSettings} />
                     </div>
 
-                    {/* Right Column: Input & History */}
+                    {/* Right Column: Input, Charts, History */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <DailyInput
                             userId={user.uid}
@@ -134,6 +135,9 @@ export default function DashboardPage() {
                             initialData={editingEntry}
                             onCancel={handleCancelEdit}
                         />
+
+                        <ChartsOverview entries={entries} settings={userSettings} />
+
                         <HistoryTable
                             entries={entries}
                             onDelete={handleDeleteEntry}

@@ -65,6 +65,17 @@ export const addDailyEntry = async (userId: string, entry: Omit<DailyEntry, "use
     });
 };
 
+export const getDailyEntry = async (userId: string, date: string): Promise<DailyEntry | null> => {
+    const entryId = `${userId}_${date}`;
+    const docRef = doc(db, "entries", entryId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as DailyEntry;
+    }
+    return null;
+};
+
 export const getEntries = async (userId: string, days: number = 30): Promise<DailyEntry[]> => {
     const entriesRef = collection(db, "entries");
     const q = query(
@@ -89,7 +100,8 @@ export const updateDailyEntry = async (userId: string, originalEntry: DailyEntry
     if (oldId === newId) {
         // Date didn't change, just update
         await updateDoc(doc(db, "entries", oldId), {
-            ...newEntry
+            ...newEntry,
+            userId
         });
     } else {
         // Date changed, move data

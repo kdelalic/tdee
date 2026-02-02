@@ -28,10 +28,6 @@ export default function SignupPage() {
             await setDoc(doc(db, "users", userCredential.user.uid), {
                 email: email,
                 createdAt: new Date().toISOString(),
-                settings: {
-                    goal: "maintain", // Default
-                    startWeight: 0,
-                }
             });
             router.push("/dashboard");
         } catch (err: any) {

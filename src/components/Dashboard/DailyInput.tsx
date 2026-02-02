@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addDailyEntry, updateDailyEntry, DailyEntry } from "@/lib/firebase/firestore";
+import { addDailyEntry, updateDailyEntry, getDailyEntry, DailyEntry } from "@/lib/firebase/firestore";
 import styles from "./Dashboard.module.css"; // We'll create this shared CSS
 
 interface DailyInputProps {
@@ -48,6 +48,19 @@ export default function DailyInput({ userId, onEntryAdded, initialData, onCancel
                 weight: parseFloat(weight),
                 calories: parseInt(calories),
             };
+
+            // Check for existing entry if adding new or if date changed during edit
+            const needsCheck = !initialData || (initialData.date !== date);
+            if (needsCheck) {
+                const existing = await getDailyEntry(userId, date);
+                if (existing) {
+                    const confirmed = window.confirm("An entry for this date already exists. Do you want to overwrite it?");
+                    if (!confirmed) {
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
 
             if (initialData) {
                 await updateDailyEntry(userId, initialData, entryData);
@@ -119,9 +132,12 @@ export default function DailyInput({ userId, onEntryAdded, initialData, onCancel
                         className={styles.input}
                     />
                 </div>
-                <button type="submit" disabled={loading} className={styles.primaryButton}>
-                    {loading ? "Saving..." : (initialData ? "Update" : "Add")}
-                </button>
+                <div className={styles.inputGroup}>
+                    <label>&nbsp;</label>
+                    <button type="submit" disabled={loading} className={styles.primaryButton}>
+                        {loading ? "Saving..." : (initialData ? "Update" : "Add")}
+                    </button>
+                </div>
             </form>
         </div>
     );

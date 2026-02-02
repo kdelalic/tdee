@@ -12,15 +12,17 @@ service cloud.firestore {
       // Allow create if the new document's userId matches the authenticated user
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       
-      // Allow update if the existing document's userId matches AND the new data also matches (can't assign to someone else)
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      // Allow update if the existing document's userId matches OR ID implies ownership
+      allow update: if request.auth != null 
+                    && (resource.data.userId == request.auth.uid || entryId.split('_')[0] == request.auth.uid)
+                    && request.resource.data.userId == request.auth.uid;
       
-      // Allow read/delete if the document belongs to the user
-      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow read/delete if the document belongs to the user (by field or ID)
+      allow read, delete: if request.auth != null 
+                          && (resource.data.userId == request.auth.uid || entryId.split('_')[0] == request.auth.uid);
       
-      // For list queries (collection group queries or simple collection queries)
-      // Firestore requires the query to match the security rule.
-      // So `where("userId", "==", auth.uid)` works with the above read rule.
+      // For list queries, the query constraints must match the rules.
+      // where("userId", "==", auth.uid) typically aligns with resource.data.userId check.
     }
   }
 }

@@ -38,38 +38,59 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                 </div>
 
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>You've {isLossGoal ? "Lost" : "Gained"}:</span>
-                    <span className={`${styles.statValue} ${isLossGoal ? styles.textSuccess : styles.textError}`}>
-                        {isLossGoal ? stats.totalLost : -stats.totalLost} <small>{settings.units}</small>
-                    </span>
-                </div>
-
-                <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Current TDEE:</span>
-                    <span className={styles.statValue}>
-                        ~{stats.tdee} <small>Cal/Day</small>
+                    <span className={styles.statLabel}>You've {stats.totalLost >= 0 ? "Lost" : "Gained"}:</span>
+                    <span className={`${styles.statValue} ${(isLossGoal && stats.totalLost >= 0) || (!isLossGoal && stats.totalLost <= 0)
+                        ? styles.textSuccess
+                        : styles.textError
+                        }`}>
+                        {Math.abs(stats.totalLost)} <small>{settings.units}</small>
                     </span>
                 </div>
 
                 <hr className={styles.divider} />
 
-                <div className={styles.statRow}>
-                    <span className={styles.statLabel}>Target Daily Calories:</span>
-                    <span className={`${styles.statValue} ${styles.textPrimary}`}>
-                        {stats.targetCalories} <small>Cal/Day</small>
-                    </span>
-                </div>
+                {entries.length >= 7 ? (
+                    <>
+                        <div className={styles.statRow}>
+                            <span className={styles.statLabel}>Current TDEE:</span>
+                            <span className={styles.statValue}>
+                                ~{stats.tdee} <small>Cal/Day</small>
+                            </span>
+                        </div>
 
-                <div className={styles.statRow}>
-                    <span className={styles.statLabel}>To Reach Goal By:</span>
-                    <span className={styles.statValue}>
-                        {stats.goalDate}
-                    </span>
-                </div>
+                        <div className={styles.statRow}>
+                            <span className={styles.statLabel}>Target Daily Calories:</span>
+                            <span className={`${styles.statValue} ${styles.textPrimary}`}>
+                                {stats.targetCalories} <small>Cal/Day</small>
+                            </span>
+                        </div>
 
-                <div className={styles.statFooter}>
-                    {stats.weeksToGoal} Weeks until you reach your goal weight
-                </div>
+                        <div className={styles.statRow}>
+                            <span className={styles.statLabel}>To Reach Goal By:</span>
+                            <span className={styles.statValue}>
+                                {stats.goalDate}
+                            </span>
+                        </div>
+
+                        <div className={styles.statFooter}>
+                            {stats.weeksToGoal} Weeks until you reach your goal weight
+                            <br />
+                            {entries.length < 28 && (
+                                <span className={styles.statAccuracyNote}>
+                                    Numbers take 3-4 weeks to stabilize and become accurate.
+                                </span>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className={styles.projectionsWait}>
+                        <p>
+                            Projections available after 7 days of data.
+                            <br />
+                            ({7 - entries.length} days remaining)
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,139 +1,312 @@
+/* Main Container */
 .dashboardContainer {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5rem;
+  min-height: 100vh;
 }
 
+/* Header Section */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .title {
   font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
 }
 
 .logoutButton {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   background-color: transparent;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
   font-weight: 500;
-  transition: all 0.2s;
+  font-size: 0.875rem;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .logoutButton:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  background-color: var(--surface-hover);
+  color: var(--foreground);
+  border-color: var(--text-tertiary);
 }
 
+/* Grid Layout */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(12, 1fr);
   gap: 1.5rem;
+  align-items: start; /* Fixes the stretching height issue */
 }
 
+.grid > div:nth-child(1) { /* Stats Column */
+  grid-column: span 12;
+}
+
+.grid > div:nth-child(2) { /* Input Column */
+  grid-column: span 12;
+}
+
+.grid > div:nth-child(3) { /* Charts */
+  grid-column: span 12;
+}
+
+.grid > div:nth-child(4) { /* History */
+  grid-column: span 12;
+}
+
+@media (min-width: 1024px) {
+  .grid > div:nth-child(1) { /* Stats */
+    grid-column: span 4;
+    position: sticky;
+    top: 2rem;
+  }
+  .grid > div:nth-child(2) { /* Input */
+    grid-column: span 8;
+  }
+}
+
+/* Card Styles */
 .card {
   background-color: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  position: relative;
+  overflow: hidden;
+  height: fit-content; /* Critical fix for height stretching */
+}
+
+.card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-md);
 }
 
 .cardTitle {
   font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+/* Stats Card Specific */
+.statsCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.statsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.statRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.statLabel {
+  font-size: 0.75rem;
   color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .statValue {
   font-size: 2.5rem;
   font-weight: 800;
+  letter-spacing: -0.04em;
   color: var(--foreground);
-}
-
-.statLabel {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
-}
-
-.formRow {
+  line-height: 1;
   display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem;
+}
+
+.statValue small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: -0.01em;
+  margin-left: 2px;
+}
+
+.statFooter {
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.statAccuracyNote {
+  display: block;
+  font-size: 0.75rem !important;
+  color: var(--text-tertiary) !important;
+  margin-top: 0.5rem;
+  font-weight: 400 !important;
+}
+
+.projectionsWait {
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    background: var(--surface-hover);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+/* Form Styles */
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .formRow {
+    grid-template-columns: repeat(3, 1fr) auto;
+    align-items: end;
+  }
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  flex: 1;
-  min-width: 120px;
+  position: relative;
 }
 
 .inputGroup label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--text-secondary);
+  margin-left: 2px;
 }
 
 .input {
-  padding: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-size: 1rem;
   background-color: var(--background);
   color: var(--foreground);
+  transition: all 0.2s ease;
+  outline: none;
+  font-weight: 500;
 }
 
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+  background-color: var(--card-bg);
+}
+
+.input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Calendar styling */
+.input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  padding: 4px;
+}
+.input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .input {
+    color-scheme: dark;
+  }
+  .input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+  }
+}
+
+/* Button Styles */
 .primaryButton {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary);
-  color: white;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  transition: background-color 0.2s;
-  min-width: 100px;
+    padding: 0 2rem;
+    height: 50px;
+    width: 100%;
+    background-color: var(--primary);
+    color: white;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
-.primaryButton:hover {
-  background-color: var(--primary-hover);
+.primaryButton:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.primaryButton:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .primaryButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
 }
 
 .secondaryButton {
-  padding: 0.25rem 0.75rem;
-  background-color: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  transition: all 0.2s;
+    padding: 0.5rem 1rem;
+    background-color: var(--surface-hover);
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: all 0.2s;
 }
 
 .secondaryButton:hover {
-  border-color: var(--text-secondary);
-  color: var(--foreground);
+    background-color: var(--border);
+    color: var(--foreground);
 }
 
+/* Table Styles */
 .tableContainer {
   overflow-x: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-sm);
 }
 
 .table {
@@ -144,77 +317,58 @@
 
 .table th {
   text-align: left;
-  padding: 1rem;
-  border-bottom: 2px solid var(--border);
+  padding: 1.125rem 1.5rem;
+  border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
   font-weight: 600;
+  letter-spacing: 0.025em;
+  background-color: var(--surface-hover);
+  white-space: nowrap;
 }
 
 .table td {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
   color: var(--foreground);
+  transition: background-color 0.1s;
 }
 
 .table tr:last-child td {
   border-bottom: none;
 }
 
+.table tr:hover td {
+  background-color: var(--surface-hover);
+}
+
+/* Settings Form Specifics */
 .settingsForm {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-.statsGrid {
+.formGrid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
 }
 
-.statRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+/* Text Colors */
+.textPrimary { color: var(--primary); }
+.textSuccess { color: var(--success); }
+.textError { color: var(--error); }
 
-/* New Styles for Refinement */
-.statsCard {
-  background-color: var(--card-bg); /* Use theme bg instead of blue tint */
-}
-
-.textPrimary {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.textSuccess {
-  color: var(--success);
-  font-weight: 700;
-}
-
-.textError {
-  /* We use the red color for "Loss" which is "good" in this context usually, 
-     but let's stick to semantic names or use specific variables if needed.
-     Loss = Red in standard weight context usually means strict dropping? 
-     Actually, "You've Lost" in red might look alarming. 
-     If the user used the spreadsheet, "Lost" is red there. 
-     Let's define a specific class for weight change. */
-  color: var(--error);
-  font-weight: 700;
-}
-
+/* Utilities */
 .divider {
-  margin: 0.5rem 0;
+  margin: 1.5rem 0;
   border: 0;
   border-top: 1px solid var(--border);
+  opacity: 1;
 }
 
-.statFooter {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  text-align: center;
+.fullWidth {
+  width: 100%;
 }
 
 .inputWithHelper {
@@ -225,17 +379,8 @@
 
 .helperText {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   white-space: nowrap;
-}
-
-.fullWidth {
-  width: 100%;
-  margin-top: 1rem;
-}
-
-@media (min-width: 768px) {
-    /* If we want 2-column stats on larger screens, though the spreadsheet look is vertical */
 }
 
 /* Accordion Styles */
@@ -245,48 +390,55 @@
   align-items: center;
   cursor: pointer;
   user-select: none;
-  padding-bottom: 0.5rem; /* Visual separation if open? No, let's keep it tight if closed */
+  padding: 0.5rem 0;
 }
 
 .accordionTitle {
-  font-size: 1.125rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--foreground);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .chevron {
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.625rem;
   transition: transform 0.3s ease;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  border-radius: 50%;
+  background-color: var(--surface-hover);
 }
 
 .chevronOpen {
   transform: rotate(180deg);
+  background-color: var(--primary-light);
+  color: var(--primary);
 }
 
 .accordionContent {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .badge {
-  background-color: var(--primary);
-  color: white;
-  font-size: 0.7rem;
-  padding: 0.2rem 0.5rem;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.625rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-}
-
-/* Improved Form Grid for Accordion */
-.formGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1rem;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .cancelLink {
@@ -294,14 +446,18 @@
     font-size: 0.875rem;
     color: var(--text-secondary);
     cursor: pointer;
-    margin-top: 0.5rem;
+    margin-top: 1rem;
     text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: all 0.2s;
 }
 .cancelLink:hover {
     color: var(--foreground);
+    text-decoration-color: var(--foreground);
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
