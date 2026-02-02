@@ -278,7 +278,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
         return { absRate: absRate.toFixed(2), direction };
     };
 
-    const isOnTrack = weeklyRate?.actualRate !== null && settings?.weeklyGoal
+    const isOnTrack = (weeklyRate?.actualRate != null && settings?.weeklyGoal != null)
         ? Math.sign(weeklyRate.actualRate) === Math.sign(settings.weeklyGoal) &&
         Math.abs(weeklyRate.actualRate) <= Math.abs(settings.weeklyGoal) * 1.5
         : null;
