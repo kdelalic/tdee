@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useRouter } from "next/navigation";
-import { getEntries, DailyEntry, deleteDailyEntry, updateDailyEntry, getUserSettings, UserSettings } from "@/lib/firebase/firestore";
+import { getEntries, DailyEntry, deleteDailyEntry, getUserSettings, UserSettings } from "@/lib/firebase/firestore";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/firebase";
 import DailyInput from "@/components/Dashboard/DailyInput";
@@ -11,6 +11,7 @@ import StatsSummary from "@/components/Dashboard/StatsSummary";
 import ChartsOverview from "@/components/Dashboard/ChartsOverview";
 import HistoryTable from "@/components/Dashboard/HistoryTable";
 import SetupAccordion from "@/components/Dashboard/SetupAccordion";
+import EditEntryModal from "@/components/Dashboard/EditEntryModal";
 import styles from "@/components/Dashboard/Dashboard.module.css";
 
 export default function DashboardPage() {
@@ -68,8 +69,6 @@ export default function DashboardPage() {
 
     const handleEditEntry = (entry: DailyEntry) => {
         setEditingEntry(entry);
-        // Scroll to top to see input
-        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleEntrySaved = () => {
@@ -81,7 +80,7 @@ export default function DashboardPage() {
         refreshData();
     };
 
-    const handleCancelEdit = () => {
+    const handleCloseModal = () => {
         setEditingEntry(null);
     };
 
@@ -132,8 +131,6 @@ export default function DashboardPage() {
                         <DailyInput
                             userId={user.uid}
                             onEntryAdded={handleEntrySaved}
-                            initialData={editingEntry}
-                            onCancel={handleCancelEdit}
                         />
 
                         <ChartsOverview entries={entries} settings={userSettings} />
@@ -149,6 +146,16 @@ export default function DashboardPage() {
                 <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-secondary)' }}>
                     <p>Please complete the initial setup above to start tracking.</p>
                 </div>
+            )}
+
+            {/* Edit Entry Modal */}
+            {editingEntry && (
+                <EditEntryModal
+                    entry={editingEntry}
+                    userId={user.uid}
+                    onSave={handleEntrySaved}
+                    onClose={handleCloseModal}
+                />
             )}
         </div>
     );

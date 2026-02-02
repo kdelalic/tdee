@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { calculateStats, TDEEStats } from "@/lib/tdee-calculator";
 import styles from "./Dashboard.module.css";
@@ -10,8 +10,55 @@ interface StatsSummaryProps {
     settings: UserSettings | null;
 }
 
+// Calculate the current streak of consecutive logging days
+function calculateStreak(entries: DailyEntry[]): number {
+    if (entries.length === 0) return 0;
+
+    // Sort entries by date descending (most recent first)
+    const sortedDates = entries
+        .map(e => e.date)
+        .sort((a, b) => b.localeCompare(a));
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0];
+
+    // Get yesterday's date
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0];
+
+    // Check if the most recent entry is today or yesterday
+    // If the most recent entry is older, streak is 0
+    const mostRecentDate = sortedDates[0];
+    if (mostRecentDate !== todayString && mostRecentDate !== yesterdayString) {
+        return 0;
+    }
+
+    // Create a Set for O(1) lookup
+    const dateSet = new Set(sortedDates);
+
+    // Count consecutive days starting from the most recent entry
+    let streak = 0;
+    let checkDate = new Date(mostRecentDate + 'T12:00:00'); // Use noon to avoid timezone issues
+
+    while (true) {
+        const dateString = checkDate.toISOString().split('T')[0];
+        if (dateSet.has(dateString)) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+            break;
+        }
+    }
+
+    return streak;
+}
+
 export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
     const [stats, setStats] = useState<TDEEStats | null>(null);
+
+    const streak = useMemo(() => calculateStreak(entries), [entries]);
 
     useEffect(() => {
         if (entries && settings) {
@@ -44,6 +91,18 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                         : styles.textError
                         }`}>
                         {Math.abs(stats.totalLost)} <small>{settings.units}</small>
+                    </span>
+                </div>
+
+                <hr className={styles.divider} />
+
+                {/* Streak Counter */}
+                <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Logging Streak:</span>
+                    <span className={styles.statValue}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            🔥 {streak} <small>day{streak !== 1 ? 's' : ''}</small>
+                        </span>
                     </span>
                 </div>
 
