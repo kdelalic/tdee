@@ -461,3 +461,80 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Enhanced Setup Form Styles */
+.setupGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .setupGrid {
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 2rem;
+        row-gap: 1.5rem;
+    }
+}
+
+.toggleContainer {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    background: var(--surface-hover);
+    padding: 0.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+}
+
+.toggleButton {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.toggleButton:hover {
+    color: var(--foreground);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.toggleButton.active {
+    background: var(--card-bg);
+    color: var(--foreground);
+    border-color: var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Specific active states colors */
+.toggleButton.cutActive {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.toggleButton.maintainActive {
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.2);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.toggleButton.bulkActive {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.2);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.compactInput {
+    max-width: 200px;
+}
+

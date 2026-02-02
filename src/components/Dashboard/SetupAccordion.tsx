@@ -10,6 +10,8 @@ interface SetupAccordionProps {
     onSave: () => void;
 }
 
+type GoalType = 'cut' | 'bulk' | 'maintain';
+
 export default function SetupAccordion({ userId, existingSettings, onSave }: SetupAccordionProps) {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -18,7 +20,8 @@ export default function SetupAccordion({ userId, existingSettings, onSave }: Set
     const [startDate, setStartDate] = useState("");
     const [startingWeight, setStartingWeight] = useState("");
     const [goalWeight, setGoalWeight] = useState("");
-    const [weeklyGoal, setWeeklyGoal] = useState("");
+    const [goalType, setGoalType] = useState<GoalType>('cut');
+    const [weeklyGoalRate, setWeeklyGoalRate] = useState(""); // Always positive for input
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -27,7 +30,19 @@ export default function SetupAccordion({ userId, existingSettings, onSave }: Set
             setStartDate(existingSettings.startDate || "");
             setStartingWeight(existingSettings.startingWeight?.toString() || "");
             setGoalWeight(existingSettings.goalWeight?.toString() || "");
-            setWeeklyGoal(existingSettings.weeklyGoal?.toString() || "");
+
+            // Determine Goal Type and Rate
+            const rate = existingSettings.weeklyGoal || 0;
+            if (rate < 0) {
+                setGoalType('cut');
+                setWeeklyGoalRate(Math.abs(rate).toString());
+            } else if (rate > 0) {
+                setGoalType('bulk');
+                setWeeklyGoalRate(rate.toString());
+            } else {
+                setGoalType('maintain');
+                setWeeklyGoalRate("0");
+            }
 
             // If settings exist, default to closed
             setIsOpen(false);
@@ -47,13 +62,24 @@ export default function SetupAccordion({ userId, existingSettings, onSave }: Set
         e.preventDefault();
         setLoading(true);
 
+        let finalWeeklyGoal = 0;
+        const rate = parseFloat(weeklyGoalRate);
+
+        if (goalType === 'cut') {
+            finalWeeklyGoal = -Math.abs(rate);
+        } else if (goalType === 'bulk') {
+            finalWeeklyGoal = Math.abs(rate);
+        } else {
+            finalWeeklyGoal = 0;
+        }
+
         const newSettings: Partial<UserSettings> = {
             units,
             startDate,
             startingWeight: parseFloat(startingWeight),
             goalWeight: parseFloat(goalWeight),
-            weeklyGoal: parseFloat(weeklyGoal),
-            goal: parseFloat(weeklyGoal) < 0 ? 'cut' : (parseFloat(weeklyGoal) > 0 ? 'bulk' : 'maintain')
+            weeklyGoal: finalWeeklyGoal,
+            goal: goalType
         };
 
         try {
@@ -91,7 +117,8 @@ export default function SetupAccordion({ userId, existingSettings, onSave }: Set
 
             {isOpen && (
                 <form onSubmit={handleSubmit} className={`${styles.settingsForm} ${styles.accordionContent}`}>
-                    <div className={styles.formGrid}>
+                    <div className={styles.setupGrid}>
+                        {/* Row 1 */}
                         <div className={styles.inputGroup}>
                             <label>Start Date</label>
                             <input
@@ -115,6 +142,7 @@ export default function SetupAccordion({ userId, existingSettings, onSave }: Set
                             </select>
                         </div>
 
+                        {/* Row 2 */}
                         <div className={styles.inputGroup}>
                             <label>Starting Weight ({units})</label>
                             <input
@@ -139,38 +167,72 @@ export default function SetupAccordion({ userId, existingSettings, onSave }: Set
                             />
                         </div>
 
-                        <div className={styles.inputGroup}>
-                            <label>Weekly Goal ({units}/wk)</label>
-                            <div className={styles.inputWithHelper}>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={weeklyGoal}
-                                    onChange={e => setWeeklyGoal(e.target.value)}
-                                    required
-                                    placeholder="-1.0 (loss) / 0.5 (gain)"
-                                    className={styles.input}
-                                />
-                                <span className={styles.helperText}>
-                                    (Neg = Loss)
-                                </span>
+                        {/* Row 3 - Full Width Goal Selector */}
+                        <div className={styles.inputGroup} style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ marginBottom: '0.25rem' }}>Goal Strategy</label>
+                            <div className={styles.toggleContainer}>
+                                <button
+                                    type="button"
+                                    onClick={() => setGoalType('cut')}
+                                    className={`${styles.toggleButton} ${goalType === 'cut' ? styles.cutActive : ''}`}
+                                >
+                                    📉 Cut (Lose)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setGoalType('maintain')}
+                                    className={`${styles.toggleButton} ${goalType === 'maintain' ? styles.maintainActive : ''}`}
+                                >
+                                    ⚖️ Maintain
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setGoalType('bulk')}
+                                    className={`${styles.toggleButton} ${goalType === 'bulk' ? styles.bulkActive : ''}`}
+                                >
+                                    💪 Bulk (Gain)
+                                </button>
                             </div>
                         </div>
+
+                        {/* Row 4 - Conditional Rate */}
+                        {goalType !== 'maintain' && (
+                            <div className={styles.inputGroup} style={{ gridColumn: '1 / -1' }}>
+                                <label>Target {goalType === 'cut' ? 'Loss' : 'Gain'} Rate ({units}/week)</label>
+                                <div className={styles.inputWithHelper}>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        value={weeklyGoalRate}
+                                        onChange={e => setWeeklyGoalRate(e.target.value)}
+                                        required
+                                        placeholder="1.0"
+                                        className={`${styles.input} ${styles.compactInput}`}
+                                    />
+                                    <span className={styles.helperText}>
+                                        Recommended: 0.5 - 1.5 {units}/week
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className={`${styles.primaryButton} ${styles.fullWidth}`}
-                    >
-                        {loading ? "Saving..." : "Save Settings"}
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`${styles.primaryButton} ${styles.fullWidth}`}
+                        >
+                            {loading ? "Saving..." : "Save Settings"}
+                        </button>
 
-                    {existingSettings && (
-                        <div className={styles.cancelLink} onClick={() => setIsOpen(false)}>
-                            Cancel
-                        </div>
-                    )}
+                        {existingSettings && (
+                            <div className={styles.cancelLink} onClick={() => setIsOpen(false)}>
+                                Cancel
+                            </div>
+                        )}
+                    </div>
                 </form>
             )}
         </div>

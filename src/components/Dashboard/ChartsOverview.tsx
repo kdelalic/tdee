@@ -135,6 +135,32 @@ function calculateRollingTDEE(windowEntries: DailyEntry[]): number | null {
     return Math.round(tdee);
 }
 
+// Helper to calculate linear regression trend points
+function calculateTrendLines(data: { x: number; y: number }[]): number[] {
+    if (data.length < 2) return data.map(d => d.y);
+
+    const n = data.length;
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+
+    for (let i = 0; i < n; i++) {
+        sumX += data[i].x;
+        sumY += data[i].y;
+        sumXY += data[i].x * data[i].y;
+        sumXX += data[i].x * data[i].x;
+    }
+
+    const denominator = n * sumXX - sumX * sumX;
+    if (denominator === 0) return data.map(d => d.y);
+
+    const slope = (n * sumXY - sumX * sumY) / denominator;
+    const intercept = (sumY - slope * sumX) / n;
+
+    return data.map(d => slope * d.x + intercept);
+}
+
 interface WeeklyRateData {
     actualRate: number | null;
     targetRate: number;
@@ -144,28 +170,20 @@ interface WeeklyRateData {
 function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | null): WeeklyRateData | null {
     if (!settings || entries.length < 2) return null;
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(today.getDate() - 7);
+    // Sort all entries by date (oldest first)
+    const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
 
-    // Get entries from the past 7 days
-    const recentEntries = entries.filter(entry => {
-        const [year, month, day] = entry.date.split('-').map(Number);
-        const entryDate = new Date(year, month - 1, day);
-        return entryDate >= oneWeekAgo && entryDate <= today;
-    }).sort((a, b) => a.date.localeCompare(b.date));
-
-    if (recentEntries.length < 2) {
+    // Need at least 7 entries to calculate a meaningful weekly rate
+    if (sortedEntries.length < 7) {
         return {
             actualRate: null,
             targetRate: settings.weeklyGoal,
-            daysTracked: recentEntries.length,
+            daysTracked: sortedEntries.length,
         };
     }
 
-    const earliest = recentEntries[0];
-    const latest = recentEntries[recentEntries.length - 1];
+    const earliest = sortedEntries[0];
+    const latest = sortedEntries[sortedEntries.length - 1];
 
     const [y1, m1, d1] = earliest.date.split('-').map(Number);
     const [y2, m2, d2] = latest.date.split('-').map(Number);
@@ -173,11 +191,12 @@ function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | nul
     const date2 = new Date(y2, m2 - 1, d2);
     const daysDiff = (date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24);
 
-    if (daysDiff === 0) {
+    // Safety check for zero days diff
+    if (daysDiff <= 0) {
         return {
             actualRate: null,
             targetRate: settings.weeklyGoal,
-            daysTracked: recentEntries.length,
+            daysTracked: sortedEntries.length,
         };
     }
 
@@ -187,7 +206,7 @@ function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | nul
     return {
         actualRate: Math.round(actualRate * 100) / 100,
         targetRate: settings.weeklyGoal,
-        daysTracked: recentEntries.length,
+        daysTracked: sortedEntries.length,
     };
 }
 
@@ -195,6 +214,13 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
     const data = useMemo(() => {
         // Clone and reverse to show oldest to newest
         const reversed = [...entries].reverse();
+
+        // Calculate trends on the sorted data
+        const weightPoints = reversed.map((e, i) => ({ x: i, y: e.weight }));
+        const caloriePoints = reversed.map((e, i) => ({ x: i, y: e.calories }));
+
+        const weightTrends = calculateTrendLines(weightPoints);
+        const calorieTrends = calculateTrendLines(caloriePoints);
 
         return reversed.map((entry, index) => {
             // Parse YYYY-MM-DD directly to avoid timezone issues
@@ -215,6 +241,8 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                 fullDate: entry.date,
                 weight: entry.weight,
                 calories: entry.calories,
+                weightTrend: weightTrends[index],
+                caloriesTrend: calorieTrends[index],
                 tdee: rollingTDEE,
             };
         });
@@ -262,7 +290,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                     <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{label}</p>
                     {payload.map((p: any) => (
                         <p key={p.name} style={{ color: p.color }}>
-                            {p.name}: {p.value}
+                            {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
                         </p>
                     ))}
                 </div>
@@ -316,7 +344,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 </div>
                             ) : (
                                 <div style={{ marginTop: '0.25rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                    Need more data ({weeklyRate.daysTracked}/2 days min)
+                                    Need more data ({weeklyRate.daysTracked}/7 days min)
                                 </div>
                             )}
                         </div>
