@@ -12,7 +12,9 @@ import ChartsOverview from "@/components/Dashboard/ChartsOverview";
 import HistoryTable from "@/components/Dashboard/HistoryTable";
 import EditEntryModal from "@/components/Dashboard/EditEntryModal";
 import styles from "@/components/Dashboard/Dashboard.module.css";
+import DashboardSkeleton from "@/components/Dashboard/DashboardSkeleton";
 import Link from "next/link";
+import ThemeToggle from "@/components/Theme/ThemeToggle";
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
@@ -91,11 +93,7 @@ export default function DashboardPage() {
     };
 
     if (loading || (loadingData && user)) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                Loading...
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
     if (!user) return null;
@@ -123,6 +121,7 @@ export default function DashboardPage() {
                     <Link href="/dashboard/settings" className={styles.settingsLink} title="Settings">
                         ⚙️
                     </Link>
+                    <ThemeToggle className={styles.themeToggle} />
                     <button onClick={handleLogout} className={styles.logoutButton}>
                         Log Out
                     </button>

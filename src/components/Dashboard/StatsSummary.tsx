@@ -55,6 +55,8 @@ function calculateStreak(entries: DailyEntry[]): number {
     return streak;
 }
 
+import StatsSkeleton from "./StatsSkeleton";
+
 export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
     const [stats, setStats] = useState<TDEEStats | null>(null);
 
@@ -68,7 +70,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
     }, [entries, settings]);
 
     if (!settings) return null;
-    if (!stats) return <div className={styles.card}>Loading Stats...</div>;
+    if (!stats) return <StatsSkeleton />;
 
     const isLossGoal = settings.weeklyGoal < 0;
 

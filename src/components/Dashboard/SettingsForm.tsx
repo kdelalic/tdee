@@ -175,14 +175,16 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
 
                     <div className={styles.inputGroup}>
                         <label>Units</label>
-                        <select
-                            value={units}
-                            onChange={e => setUnits(e.target.value as 'lb' | 'kg')}
-                            className={styles.input}
-                        >
-                            <option value="lb">Lb</option>
-                            <option value="kg">Kg</option>
-                        </select>
+                        <div className={styles.selectWrapper}>
+                            <select
+                                value={units}
+                                onChange={e => setUnits(e.target.value as 'lb' | 'kg')}
+                                className={`${styles.input} ${styles.selectInput}`}
+                            >
+                                <option value="lb">Lb</option>
+                                <option value="kg">Kg</option>
+                            </select>
+                        </div>
                     </div>
 
                     {/* Row 2 */}

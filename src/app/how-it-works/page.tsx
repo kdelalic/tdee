@@ -4,6 +4,7 @@ import { useAuth } from "@/components/Auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import styles from "./page.module.css";
+import Skeleton from "@/components/ui/Skeleton";
 
 const sections = [
     {
@@ -102,10 +103,30 @@ export default function HowItWorksPage() {
         }
     }, [user, loading, router]);
 
+
     if (loading) {
         return (
-            <div className={styles.loadingContainer}>
-                Loading...
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <Skeleton width={120} height={20} style={{ marginBottom: "1rem" }} />
+                    <Skeleton width={250} height={48} style={{ marginBottom: "0.5rem" }} />
+                    <Skeleton width={350} height={24} />
+                </header>
+                <div className={styles.sectionsContainer}>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className={styles.sectionCard}>
+                            <div className={styles.sectionHeader}>
+                                <Skeleton width={32} height={32} borderRadius="50%" />
+                                <Skeleton width={200} height={28} />
+                            </div>
+                            <div className={styles.sectionContent}>
+                                <Skeleton width="100%" height={16} style={{ marginBottom: 8 }} />
+                                <Skeleton width="90%" height={16} style={{ marginBottom: 8 }} />
+                                <Skeleton width="95%" height={16} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }

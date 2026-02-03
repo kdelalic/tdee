@@ -8,6 +8,9 @@ import SettingsForm from "@/components/Dashboard/SettingsForm";
 import styles from "@/components/Dashboard/Dashboard.module.css";
 import Link from "next/link";
 
+import SettingsSkeleton from "@/components/Dashboard/SettingsSkeleton";
+import Skeleton from "@/components/ui/Skeleton";
+
 export default function SettingsPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -50,8 +53,14 @@ export default function SettingsPage() {
 
     if (loading || (loadingData && user)) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                Loading...
+            <div className={styles.dashboardContainer}>
+                <header className={styles.header}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <Skeleton width={60} height={24} />
+                        <Skeleton width={150} height={40} />
+                    </div>
+                </header>
+                <SettingsSkeleton />
             </div>
         );
     }

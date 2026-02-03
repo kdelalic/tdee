@@ -4,6 +4,7 @@ import { useAuth } from "@/components/Auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import styles from "./page.module.css";
+import Skeleton from "@/components/ui/Skeleton";
 
 const tips = [
     {
@@ -68,10 +69,27 @@ export default function TipsPage() {
         }
     }, [user, loading, router]);
 
+
     if (loading) {
         return (
-            <div className={styles.loadingContainer}>
-                Loading...
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <Skeleton width={120} height={20} style={{ marginBottom: "1rem" }} />
+                    <Skeleton width={250} height={48} style={{ marginBottom: "0.5rem" }} />
+                    <Skeleton width={350} height={24} />
+                </header>
+                <div className={styles.tipsGrid}>
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className={styles.tipCard}>
+                            <div className={styles.tipIcon}>
+                                <Skeleton width={40} height={40} borderRadius="50%" />
+                            </div>
+                            <Skeleton width={150} height={24} style={{ marginBottom: "0.5rem" }} />
+                            <Skeleton width="100%" height={16} style={{ marginBottom: 4 }} />
+                            <Skeleton width="90%" height={16} />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
