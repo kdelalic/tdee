@@ -251,7 +251,16 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
     const weeklyRate = useMemo(() => calculateWeeklyRate(entries, settings), [entries, settings]);
 
     if (!entries || entries.length < 2) {
-        return null;
+        // Return a better empty state or just rely on the parent to handle "no data"
+        // But the parent is using this in a grid, so let's show a placeholder
+        return (
+            <div className={styles.card}>
+                <h2 className={styles.cardTitle}>Trends</h2>
+                <div className={styles.detailsWait}>
+                    Need at least 2 entries to display trends.
+                </div>
+            </div>
+        );
     }
 
     // Calculate generic domains for Y-axis
@@ -277,20 +286,14 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div
-                    style={{
-                        backgroundColor: 'var(--card-bg)',
-                        border: '1px solid var(--border)',
-                        padding: '0.75rem',
-                        borderRadius: 'var(--radius-md)',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        fontSize: '0.875rem'
-                    }}
-                >
-                    <p style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{label}</p>
+                <div className={styles.customTooltip}>
+                    <p className={styles.tooltipLabel}>{label}</p>
                     {payload.map((p: any) => (
-                        <p key={p.name} style={{ color: p.color }}>
-                            {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
+                        <p key={p.name} className={styles.tooltipItem}>
+                            <span style={{ color: p.color, fontWeight: 'bold' }}>•</span>
+                            <span style={{ color: p.color }}>
+                                {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
+                            </span>
                         </p>
                     ))}
                 </div>
@@ -317,20 +320,14 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
 
             {/* Weekly Rate of Change */}
             {weeklyRate && settings && (
-                <div style={{
-                    marginBottom: '2rem',
-                    padding: '1.25rem',
-                    background: 'var(--background)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border)'
-                }}>
-                    <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Weekly Rate of Change</h3>
-                    <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                <div className={styles.weeklyRateContainer}>
+                    <h3 className={styles.weeklyRateHeader}>Weekly Rate of Change</h3>
+                    <div className={styles.weeklyRateGrid}>
                         {/* Actual Rate */}
-                        <div style={{ flex: 1, minWidth: '140px' }}>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actual</span>
+                        <div className={styles.rateItem}>
+                            <span className={styles.rateLabel}>Actual</span>
                             {weeklyRate.actualRate !== null ? (
-                                <div style={{ marginTop: '0.25rem' }}>
+                                <div className={styles.rateValueContainer}>
                                     <span style={{
                                         fontSize: '1.5rem',
                                         fontWeight: 700,
@@ -338,7 +335,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                     }}>
                                         {weeklyRate.actualRate > 0 ? '+' : ''}{weeklyRate.actualRate.toFixed(2)}
                                     </span>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
+                                    <span className={styles.rateUnit}>
                                         {settings.units}/week
                                     </span>
                                 </div>
@@ -349,13 +346,13 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                             )}
                         </div>
                         {/* Target Rate */}
-                        <div style={{ flex: 1, minWidth: '140px' }}>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target</span>
-                            <div style={{ marginTop: '0.25rem' }}>
-                                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>
+                        <div className={styles.rateItem}>
+                            <span className={styles.rateLabel}>Target</span>
+                            <div className={styles.rateValueContainer}>
+                                <span className={styles.rateValue} style={{ color: 'var(--primary)' }}>
                                     {weeklyRate.targetRate > 0 ? '+' : ''}{weeklyRate.targetRate.toFixed(2)}
                                 </span>
-                                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
+                                <span className={styles.rateUnit}>
                                     {settings.units}/week
                                 </span>
                             </div>
@@ -363,11 +360,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                         {/* Status */}
                         <div style={{ flex: 1, minWidth: '140px', display: 'flex', alignItems: 'center' }}>
                             {weeklyRate.actualRate !== null && (
-                                <span style={{
-                                    padding: '0.375rem 0.75rem',
-                                    borderRadius: 'var(--radius-sm)',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
+                                <span className={styles.rateStatusBadge} style={{
                                     background: isOnTrack ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                                     color: isOnTrack ? 'var(--success)' : 'var(--warning, #f59e0b)'
                                 }}>
@@ -379,11 +372,11 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+            <div className={styles.chartGrid}>
 
                 {/* Weight Chart */}
-                <div style={{ height: 300, width: "100%" }}>
-                    <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>Weight History</h3>
+                <div className={styles.chartContainer}>
+                    <h3 className={styles.chartTitle}>Weight History</h3>
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={data}>
                             <defs>
@@ -435,8 +428,8 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                 </div>
 
                 {/* Calories Chart */}
-                <div style={{ height: 300, width: "100%" }}>
-                    <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>Calories Consumed</h3>
+                <div className={styles.chartContainer}>
+                    <h3 className={styles.chartTitle}>Calories Consumed</h3>
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -480,8 +473,8 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
 
                 {/* TDEE History Chart */}
                 {tdeeValues.length > 0 && (
-                    <div style={{ height: 300, width: "100%" }}>
-                        <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>TDEE History</h3>
+                    <div className={styles.chartContainer}>
+                        <h3 className={styles.chartTitle}>TDEE History</h3>
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data.filter(d => d.tdee !== null)}>
                                 <defs>
@@ -563,120 +556,50 @@ function AveragesSection({ entries }: AveragesSectionProps) {
         const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '';
 
         return (
-            <span style={{
-                color,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem'
-            }}>
+            <span className={styles.changeIndicator} style={{ color }}>
                 {arrow} {formatChange(change)}
             </span>
         );
     };
 
     return (
-        <div style={{ marginTop: '2rem' }}>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '1.25rem'
-            }}>
-                <h3 style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                }}>
+        <div className={styles.averagesContainer}>
+            <div className={styles.averagesHeader}>
+                <h3 className={styles.averagesTitle}>
                     Averages
                 </h3>
-                <div style={{
-                    display: 'flex',
-                    gap: '0.25rem',
-                    backgroundColor: 'var(--surface-hover)',
-                    padding: '0.25rem',
-                    borderRadius: 'var(--radius-md)'
-                }}>
+                <div className={styles.viewToggle}>
                     <button
                         onClick={() => setView('weekly')}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: view === 'weekly' ? 'var(--card-bg)' : 'transparent',
-                            color: view === 'weekly' ? 'var(--foreground)' : 'var(--text-secondary)',
-                            boxShadow: view === 'weekly' ? 'var(--shadow-sm)' : 'none'
-                        }}
+                        className={`${styles.viewToggleButton} ${view === 'weekly' ? styles.active : ''}`}
                     >
                         Weekly
                     </button>
                     <button
                         onClick={() => setView('monthly')}
-                        style={{
-                            padding: '0.5rem 1rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            backgroundColor: view === 'monthly' ? 'var(--card-bg)' : 'transparent',
-                            color: view === 'monthly' ? 'var(--foreground)' : 'var(--text-secondary)',
-                            boxShadow: view === 'monthly' ? 'var(--shadow-sm)' : 'none'
-                        }}
+                        className={`${styles.viewToggleButton} ${view === 'monthly' ? styles.active : ''}`}
                     >
                         Monthly
                     </button>
                 </div>
             </div>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: '1rem'
-            }}>
+            <div className={styles.averagesGrid}>
                 {/* Weight Average Card */}
-                <div style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '1.25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.5rem'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                    }}>
-                        <span style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-secondary)',
-                            fontWeight: 500
-                        }}>
+                <div className={styles.averageCard}>
+                    <div className={styles.averageHeader}>
+                        <span className={styles.averageLabel}>
                             Avg Weight
                         </span>
                         <ChangeIndicator change={weightChange} inverted={true} />
                     </div>
-                    <div style={{
-                        fontSize: '1.75rem',
-                        fontWeight: 700,
-                        color: 'var(--foreground)',
-                        letterSpacing: '-0.02em'
-                    }}>
+                    <div className={styles.averageValue}>
                         {currentPeriod.weight > 0
                             ? `${currentPeriod.weight.toFixed(1)} lbs`
                             : '—'
                         }
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    <div className={styles.averageComparison}>
                         {previousPeriod.weight > 0
                             ? `vs ${previousPeriod.weight.toFixed(1)} lbs last ${view === 'weekly' ? 'week' : 'month'}`
                             : `No data from last ${view === 'weekly' ? 'week' : 'month'}`
@@ -685,40 +608,20 @@ function AveragesSection({ entries }: AveragesSectionProps) {
                 </div>
 
                 {/* Calories Average Card */}
-                <div style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '1.25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.5rem'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                    }}>
-                        <span style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-secondary)',
-                            fontWeight: 500
-                        }}>
+                <div className={styles.averageCard}>
+                    <div className={styles.averageHeader}>
+                        <span className={styles.averageLabel}>
                             Avg Calories
                         </span>
                         <ChangeIndicator change={caloriesChange} />
                     </div>
-                    <div style={{
-                        fontSize: '1.75rem',
-                        fontWeight: 700,
-                        color: 'var(--foreground)',
-                        letterSpacing: '-0.02em'
-                    }}>
+                    <div className={styles.averageValue}>
                         {currentPeriod.calories > 0
                             ? `${Math.round(currentPeriod.calories).toLocaleString()}`
                             : '—'
                         }
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    <div className={styles.averageComparison}>
                         {previousPeriod.calories > 0
                             ? `vs ${Math.round(previousPeriod.calories).toLocaleString()} last ${view === 'weekly' ? 'week' : 'month'}`
                             : `No data from last ${view === 'weekly' ? 'week' : 'month'}`
@@ -728,12 +631,7 @@ function AveragesSection({ entries }: AveragesSectionProps) {
             </div>
 
             {currentPeriod.entryCount > 0 && (
-                <div style={{
-                    marginTop: '0.75rem',
-                    fontSize: '0.75rem',
-                    color: 'var(--text-tertiary)',
-                    textAlign: 'center'
-                }}>
+                <div className={styles.averageFooter}>
                     Based on {currentPeriod.entryCount} {currentPeriod.entryCount === 1 ? 'entry' : 'entries'} this {view === 'weekly' ? 'week' : 'month'}
                     {previousPeriod.entryCount > 0 && ` • ${previousPeriod.entryCount} last ${view === 'weekly' ? 'week' : 'month'}`}
                 </div>

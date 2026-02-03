@@ -8,9 +8,55 @@ interface HistoryTableProps {
 }
 
 export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTableProps) {
+    // Format date helper
+    const formatDate = (dateString: string) => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    };
+
+    const handleExport = () => {
+        if (!entries.length) return;
+
+        // Create CSV content
+        const headers = ["Date", "Weight (lbs)", "Calories"];
+        const rows = entries.map(e => [e.date, e.weight, e.calories]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(r => r.join(","))
+        ].join("\n");
+
+        // Create download link
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `tdee_data_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Recent Entries</h2>
+            <div className={styles.tableHeader}>
+                <h2 className={styles.cardTitle} style={{ marginBottom: 0 }}>Recent Entries</h2>
+                {entries.length > 0 && (
+                    <button
+                        onClick={handleExport}
+                        className={styles.secondaryButton}
+                        title="Download CSV"
+                    >
+                        Export CSV
+                    </button>
+                )}
+            </div>
             <div className={styles.tableContainer}>
                 <table className={styles.table}>
                     <thead>
@@ -24,30 +70,33 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
                     <tbody>
                         {entries.length === 0 ? (
                             <tr>
-                                <td colSpan={4} style={{ textAlign: "center", padding: "2rem" }}>
-                                    No entries yet. Start tracking!
+                                <td colSpan={4} className={styles.emptyStateCell}>
+                                    <div className={styles.emptyStateMessage}>
+                                        <span className={styles.emptyStateIcon}>📝</span>
+                                        <span>No entries yet. Start tracking to see your history!</span>
+                                    </div>
                                 </td>
                             </tr>
                         ) : (
                             entries.map((entry) => (
                                 <tr key={entry.id || entry.date}>
-                                    <td>{entry.date}</td>
+                                    <td>{formatDate(entry.date)}</td>
                                     <td>{entry.weight}</td>
                                     <td>{entry.calories}</td>
                                     <td>
                                         <button
                                             onClick={() => onEdit(entry)}
-                                            className={styles.editButton}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', marginRight: '0.5rem' }}
+                                            className={`${styles.actionButton} ${styles.editButton}`}
                                             aria-label="Edit entry"
+                                            title="Edit"
                                         >
                                             ✏️
                                         </button>
                                         <button
                                             onClick={() => entry.id && onDelete(entry.id)}
-                                            className={styles.deleteButton}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                            className={`${styles.actionButton} ${styles.deleteButton}`}
                                             aria-label="Delete entry"
+                                            title="Delete"
                                         >
                                             ❌
                                         </button>
