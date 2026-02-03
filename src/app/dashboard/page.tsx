@@ -112,18 +112,18 @@ export default function DashboardPage() {
             <header className={styles.header}>
                 <h1 className={styles.title}>Dashboard</h1>
                 <div className={styles.headerActions}>
-                    <Link href="/tips" className={styles.tipsButton}>
-                        💡 <span className={styles.hideOnMobile}>Tips</span>
+                    <Link href="/tips" className={styles.tipsButton} title="Tips for Success">
+                        💡
                     </Link>
-                    <Link href="/how-it-works" className={styles.tipsButton}>
-                        📊 <span className={styles.hideOnMobile}>How It Works</span>
+                    <Link href="/how-it-works" className={styles.tipsButton} title="How Equations Work">
+                        📊
                     </Link>
-                    <Link href="/dashboard/settings" className={styles.settingsLink} title="Settings">
+                    <Link href="/dashboard/settings" className={styles.settingsLink} title="Goal Settings">
                         ⚙️
                     </Link>
                     <ThemeToggle className={styles.themeToggle} />
-                    <button onClick={handleLogout} className={styles.logoutButton}>
-                        Log Out
+                    <button onClick={handleLogout} className={styles.logoutButton} title="Log Out">
+                        ⏻
                     </button>
                 </div>
             </header>
