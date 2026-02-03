@@ -22,6 +22,7 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
     const [goalType, setGoalType] = useState<GoalType>('cut');
     const [weeklyGoalRate, setWeeklyGoalRate] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (existingSettings) {
@@ -52,9 +53,48 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
+
+        const startW = parseFloat(startingWeight);
+        const goalW = parseFloat(goalWeight);
+        const rate = parseFloat(weeklyGoalRate);
+
+        if (startW < 0 || goalW < 0 || rate < 0) {
+            alert("Values cannot be negative");
+            setLoading(false);
+            return;
+        }
+
+        if (startW <= 0) {
+            setError("Starting weight must be positive");
+            setLoading(false);
+            return;
+        }
+
+        if (goalType !== 'maintain') {
+            if (goalW <= 0) {
+                setError("Goal weight must be positive");
+                setLoading(false);
+                return;
+            }
+            if (rate <= 0) {
+                setError("Target rate must be positive");
+                setLoading(false);
+                return;
+            }
+            if (goalType === 'cut' && goalW >= startW) {
+                setError("For cutting, goal weight must be less than current weight");
+                setLoading(false);
+                return;
+            }
+            if (goalType === 'bulk' && goalW <= startW) {
+                setError("For bulking, goal weight must be greater than current weight");
+                setLoading(false);
+                return;
+            }
+        }
 
         let finalWeeklyGoal = 0;
-        const rate = parseFloat(weeklyGoalRate);
 
         if (goalType === 'cut') {
             finalWeeklyGoal = -Math.abs(rate);
@@ -67,8 +107,8 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
         const newSettings: Partial<UserSettings> = {
             units,
             startDate,
-            startingWeight: parseFloat(startingWeight),
-            goalWeight: parseFloat(goalWeight),
+            startingWeight: startW,
+            goalWeight: goalType === 'maintain' ? startW : goalW, // if maintaining, goal is to stay at start weight (conceptually) or we effectively ignore it
             weeklyGoal: finalWeeklyGoal,
             goal: goalType
         };
@@ -78,11 +118,31 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
             onSave();
         } catch (err) {
             console.error(err);
-            alert("Failed to save settings");
+            setError("Failed to save settings");
         } finally {
             setLoading(false);
         }
     };
+
+    const getValidationError = () => {
+        const startW = parseFloat(startingWeight);
+        const goalW = parseFloat(goalWeight);
+        const rate = parseFloat(weeklyGoalRate);
+
+        if (isNaN(startW) || startW <= 0) return "Starting weight must be positive";
+        if (!startDate) return null; // Date is required but browser handles it, or strictly: "Start date is required"
+
+        if (goalType !== 'maintain') {
+            if (isNaN(goalW) || goalW <= 0) return "Goal weight must be positive";
+            if (isNaN(rate) || rate <= 0) return "Target rate must be positive";
+
+            if (goalType === 'cut' && goalW >= startW) return "For cutting, goal weight must be less than current weight";
+            if (goalType === 'bulk' && goalW <= startW) return "For bulking, goal weight must be greater than current weight";
+        }
+        return null;
+    };
+
+    const validationError = getValidationError();
 
     return (
         <div className={styles.card}>
@@ -92,6 +152,12 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                 </h2>
                 {!existingSettings && <span className={styles.badge}>Required</span>}
             </div>
+
+            {(error || validationError) && (
+                <div className={styles.errorBanner}>
+                    {error || validationError}
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className={styles.settingsForm}>
                 <div className={styles.setupGrid}>
@@ -125,6 +191,7 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                         <input
                             type="number"
                             step="0.1"
+                            min="0"
                             value={startingWeight}
                             onChange={e => setStartingWeight(e.target.value)}
                             required
@@ -137,10 +204,13 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                         <input
                             type="number"
                             step="0.1"
+                            min="0"
                             value={goalWeight}
                             onChange={e => setGoalWeight(e.target.value)}
-                            required
-                            className={styles.input}
+                            required={goalType !== 'maintain'}
+                            disabled={goalType === 'maintain'}
+                            className={`${styles.input} ${goalType === 'maintain' ? styles.disabledInput : ''}`}
+                            style={goalType === 'maintain' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                         />
                     </div>
 
@@ -153,21 +223,24 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                                 onClick={() => setGoalType('cut')}
                                 className={`${styles.toggleButton} ${goalType === 'cut' ? styles.cutActive : ''}`}
                             >
-                                📉 Cut (Lose)
+                                📉 <span className={styles.hideOnMobile}>Cut (Lose)</span><span className={styles.showOnMobile}>Cut</span>
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setGoalType('maintain')}
+                                onClick={() => {
+                                    setGoalType('maintain');
+                                    setGoalWeight(startingWeight); // Auto-set goal to start when maintaining
+                                }}
                                 className={`${styles.toggleButton} ${goalType === 'maintain' ? styles.maintainActive : ''}`}
                             >
-                                ⚖️ Maintain
+                                ⚖️ <span className={styles.hideOnMobile}>Maintain</span><span className={styles.showOnMobile}>Maint.</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setGoalType('bulk')}
                                 className={`${styles.toggleButton} ${goalType === 'bulk' ? styles.bulkActive : ''}`}
                             >
-                                💪 Bulk (Gain)
+                                💪 <span className={styles.hideOnMobile}>Bulk (Gain)</span><span className={styles.showOnMobile}>Bulk</span>
                             </button>
                         </div>
                     </div>
@@ -198,7 +271,8 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                 <div className={styles.settingsActions}>
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !!validationError}
+                        title={validationError || "Save settings"}
                         className={`${styles.primaryButton} ${styles.fullWidth}`}
                     >
                         {loading ? "Saving..." : "Save Settings"}

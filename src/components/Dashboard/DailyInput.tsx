@@ -31,6 +31,12 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                 calories: parseInt(calories),
             };
 
+            if (entryData.weight < 0 || entryData.calories < 0) {
+                alert("Values cannot be negative");
+                setLoading(false);
+                return;
+            }
+
             // Check for existing entry
             const existing = await getDailyEntry(userId, date);
             if (existing) {
@@ -73,6 +79,7 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                     <input
                         type="number"
                         step="0.1"
+                        min="0"
                         placeholder="0.0"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
@@ -84,6 +91,7 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                     <label>Calories</label>
                     <input
                         type="number"
+                        min="0"
                         placeholder="0"
                         value={calories}
                         onChange={(e) => setCalories(e.target.value)}

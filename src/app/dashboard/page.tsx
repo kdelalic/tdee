@@ -115,10 +115,10 @@ export default function DashboardPage() {
                 <h1 className={styles.title}>Dashboard</h1>
                 <div className={styles.headerActions}>
                     <Link href="/tips" className={styles.tipsButton}>
-                        💡 Tips
+                        💡 <span className={styles.hideOnMobile}>Tips</span>
                     </Link>
                     <Link href="/how-it-works" className={styles.tipsButton}>
-                        📊 How It Works
+                        📊 <span className={styles.hideOnMobile}>How It Works</span>
                     </Link>
                     <Link href="/dashboard/settings" className={styles.settingsLink} title="Settings">
                         ⚙️

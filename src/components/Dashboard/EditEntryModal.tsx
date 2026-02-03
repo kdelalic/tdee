@@ -37,10 +37,18 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
         e.preventDefault();
         setLoading(true);
         try {
+            const w = parseFloat(weight);
+            const c = parseInt(calories);
+            if (w < 0 || c < 0) {
+                alert("Values cannot be negative");
+                setLoading(false);
+                return;
+            }
+
             await updateDailyEntry(userId, entry, {
                 date: entry.date,
-                weight: parseFloat(weight),
-                calories: parseInt(calories),
+                weight: w,
+                calories: c,
             });
             onSave();
         } catch (error) {
@@ -87,6 +95,7 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
                             id="edit-weight"
                             type="number"
                             step="0.1"
+                            min="0"
                             value={weight}
                             onChange={(e) => setWeight(e.target.value)}
                             required
@@ -100,6 +109,7 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
                         <input
                             id="edit-calories"
                             type="number"
+                            min="0"
                             value={calories}
                             onChange={(e) => setCalories(e.target.value)}
                             required

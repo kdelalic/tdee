@@ -379,7 +379,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
 
                 {/* Weight Chart */}
                 <div style={{ height: 300, width: "100%" }}>
@@ -639,7 +639,7 @@ function AveragesSection({ entries }: AveragesSectionProps) {
 
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                 gap: '1rem'
             }}>
                 {/* Weight Average Card */}
