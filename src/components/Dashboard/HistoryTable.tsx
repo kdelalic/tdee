@@ -1,4 +1,5 @@
 import { DailyEntry } from "@/lib/firebase/firestore";
+import { escapeCSV } from "@/lib/validation";
 import styles from "./Dashboard.module.css";
 
 interface HistoryTableProps {
@@ -22,9 +23,13 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
     const handleExport = () => {
         if (!entries.length) return;
 
-        // Create CSV content
+        // Create CSV content with proper escaping
         const headers = ["Date", "Weight (lbs)", "Calories"];
-        const rows = entries.map(e => [e.date, e.weight, e.calories]);
+        const rows = entries.map(e => [
+            escapeCSV(e.date),
+            escapeCSV(e.weight),
+            escapeCSV(e.calories)
+        ]);
 
         const csvContent = [
             headers.join(","),
@@ -57,6 +62,8 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
                     </button>
                 )}
             </div>
+
+            {/* Desktop Table View */}
             <div className={styles.tableContainer}>
                 <table className={styles.table}>
                     <thead>
@@ -83,22 +90,23 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
                                     <td>{formatDate(entry.date)}</td>
                                     <td>{entry.weight}</td>
                                     <td>{entry.calories}</td>
+
                                     <td>
                                         <button
                                             onClick={() => onEdit(entry)}
                                             className={`${styles.actionButton} ${styles.editButton}`}
-                                            aria-label="Edit entry"
+                                            aria-label={`Edit entry for ${formatDate(entry.date)}`}
                                             title="Edit"
                                         >
-                                            ✏️
+                                            <span aria-hidden="true">✏️</span>
                                         </button>
                                         <button
                                             onClick={() => entry.id && onDelete(entry.id)}
                                             className={`${styles.actionButton} ${styles.deleteButton}`}
-                                            aria-label="Delete entry"
+                                            aria-label={`Delete entry for ${formatDate(entry.date)}`}
                                             title="Delete"
                                         >
-                                            ❌
+                                            <span aria-hidden="true">❌</span>
                                         </button>
                                     </td>
                                 </tr>
@@ -106,6 +114,51 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className={styles.mobileCards}>
+                {entries.length === 0 ? (
+                    <div className={styles.emptyStateMessage}>
+                        <span className={styles.emptyStateIcon}>📝</span>
+                        <span>No entries yet. Start tracking to see your history!</span>
+                    </div>
+                ) : (
+                    entries.map((entry) => (
+                        <div key={entry.id || entry.date} className={styles.mobileCard}>
+                            <div className={styles.mobileCardHeader}>
+                                <span className={styles.mobileCardDate}>{formatDate(entry.date)}</span>
+                                <div className={styles.mobileCardActions}>
+                                    <button
+                                        onClick={() => onEdit(entry)}
+                                        className={`${styles.actionButton} ${styles.editButton}`}
+                                        aria-label={`Edit entry for ${formatDate(entry.date)}`}
+                                    >
+                                        <span aria-hidden="true">✏️</span>
+                                    </button>
+                                    <button
+                                        onClick={() => entry.id && onDelete(entry.id)}
+                                        className={`${styles.actionButton} ${styles.deleteButton}`}
+                                        aria-label={`Delete entry for ${formatDate(entry.date)}`}
+                                    >
+                                        <span aria-hidden="true">❌</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className={styles.mobileCardBody}>
+                                <div className={styles.mobileCardStat}>
+                                    <span className={styles.mobileCardLabel}>Weight</span>
+                                    <span className={styles.mobileCardValue}>{entry.weight} lbs</span>
+                                </div>
+                                <div className={styles.mobileCardStat}>
+                                    <span className={styles.mobileCardLabel}>Calories</span>
+                                    <span className={styles.mobileCardValue}>{entry.calories}</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

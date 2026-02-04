@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TDEE Tracker",
   description: "Adaptive TDEE tracker for bodybuilding bulks and cuts",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

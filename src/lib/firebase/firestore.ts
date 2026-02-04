@@ -32,7 +32,6 @@ export interface DailyEntry {
     date: string; // YYYY-MM-DD
     weight: number;
     calories: number;
-    notes?: string;
     createdAt: string;
 }
 

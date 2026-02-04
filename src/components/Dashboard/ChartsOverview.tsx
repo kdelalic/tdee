@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import {
     LineChart,
     Line,
@@ -15,6 +15,68 @@ import {
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import styles from "./Dashboard.module.css";
+
+// Tooltip types and component extracted outside for performance
+interface TooltipPayloadItem {
+    value: number;
+    name: string;
+    color: string;
+}
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadItem[];
+    label?: string;
+}
+
+const CustomTooltip = memo(({ active, payload, label }: CustomTooltipProps) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className={styles.customTooltip}>
+                <p className={styles.tooltipLabel}>{label}</p>
+                {payload.map((p: TooltipPayloadItem) => (
+                    <p key={p.name} className={styles.tooltipItem}>
+                        <span style={{ color: p.color, fontWeight: 'bold' }}>•</span>
+                        <span style={{ color: p.color }}>
+                            {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
+                        </span>
+                    </p>
+                ))}
+            </div>
+        );
+    }
+    return null;
+});
+
+CustomTooltip.displayName = "CustomTooltip";
+
+// ChangeIndicator component extracted for performance
+interface ChangeIndicatorProps {
+    change: number | null;
+    inverted?: boolean;
+}
+
+const formatChange = (change: number | null) => {
+    if (change === null) return null;
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change.toFixed(1)}%`;
+};
+
+const ChangeIndicator = memo(({ change, inverted = false }: ChangeIndicatorProps) => {
+    if (change === null) return <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>—</span>;
+
+    const isPositive = inverted ? change < 0 : change > 0;
+    const color = Math.abs(change) < 0.5 ? 'var(--text-tertiary)' : isPositive ? 'var(--success)' : 'var(--error)';
+    const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '';
+
+    return (
+        <span className={styles.changeIndicator} style={{ color }}>
+            {arrow} {formatChange(change)}
+        </span>
+    );
+});
+
+ChangeIndicator.displayName = "ChangeIndicator";
 
 interface PeriodAverage {
     weight: number;
@@ -283,25 +345,6 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
     const COLOR_CALORIES = "#8b5cf6"; // Violet 500
     const COLOR_TDEE = "#10b981"; // Emerald 500
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className={styles.customTooltip}>
-                    <p className={styles.tooltipLabel}>{label}</p>
-                    {payload.map((p: any) => (
-                        <p key={p.name} className={styles.tooltipItem}>
-                            <span style={{ color: p.color, fontWeight: 'bold' }}>•</span>
-                            <span style={{ color: p.color }}>
-                                {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
-                            </span>
-                        </p>
-                    ))}
-                </div>
-            );
-        }
-        return null;
-    };
-
     // Helpers for weekly rate display
     const formatRate = (rate: number) => {
         const absRate = Math.abs(rate);
@@ -540,27 +583,6 @@ function AveragesSection({ entries }: AveragesSectionProps) {
     const caloriesChange = currentPeriod.calories && previousPeriod.calories
         ? ((currentPeriod.calories - previousPeriod.calories) / previousPeriod.calories) * 100
         : null;
-
-    const formatChange = (change: number | null) => {
-        if (change === null) return null;
-        const sign = change >= 0 ? '+' : '';
-        return `${sign}${change.toFixed(1)}%`;
-    };
-
-    const ChangeIndicator = ({ change, inverted = false }: { change: number | null; inverted?: boolean }) => {
-        if (change === null) return <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>—</span>;
-
-        // For weight, decrease is typically good (inverted=true for weight loss goals)
-        const isPositive = inverted ? change < 0 : change > 0;
-        const color = Math.abs(change) < 0.5 ? 'var(--text-tertiary)' : isPositive ? 'var(--success)' : 'var(--error)';
-        const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '';
-
-        return (
-            <span className={styles.changeIndicator} style={{ color }}>
-                {arrow} {formatChange(change)}
-            </span>
-        );
-    };
 
     return (
         <div className={styles.averagesContainer}>

@@ -101,3 +101,46 @@
 .footer a:hover {
   text-decoration: underline;
 }
+
+.success {
+  color: var(--success);
+  background-color: rgba(34, 197, 94, 0.1);
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.forgotPassword {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.forgotPassword:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}

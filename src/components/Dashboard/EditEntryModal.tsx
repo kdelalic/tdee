@@ -15,6 +15,7 @@ interface EditEntryModalProps {
 export default function EditEntryModal({ entry, userId, onSave, onClose }: EditEntryModalProps) {
     const [weight, setWeight] = useState(entry.weight.toString());
     const [calories, setCalories] = useState(entry.calories.toString());
+
     const [loading, setLoading] = useState(false);
     const { showToast } = useToast();
 
@@ -51,6 +52,7 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
                 date: entry.date,
                 weight: w,
                 calories: c,
+
             });
             showToast("Entry updated");
             onSave();
@@ -124,6 +126,8 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
                             className={styles.input}
                         />
                     </div>
+
+
 
                     <div className={styles.actions}>
                         <button type="button" onClick={onClose} className={styles.cancelButton}>

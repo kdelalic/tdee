@@ -14,6 +14,7 @@ interface DailyInputProps {
 export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
     const [weight, setWeight] = useState("");
     const [calories, setCalories] = useState("");
+
     const [date, setDate] = useState(() => {
         const now = new Date();
         const year = now.getFullYear();
@@ -55,6 +56,7 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
 
             setWeight("");
             setCalories("");
+
             showToast("Entry added");
             onEntryAdded();
         } catch (error) {
@@ -74,6 +76,7 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
             await addDailyEntry(userId, pendingEntry);
             setWeight("");
             setCalories("");
+
             showToast("Entry updated");
             onEntryAdded();
         } catch (error) {
@@ -132,8 +135,9 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                         className={styles.input}
                     />
                 </div>
+
                 <div className={styles.inputGroup}>
-                    <label>&nbsp;</label>
+                    <label className={styles.visuallyHidden}>Submit</label>
                     <button type="submit" disabled={loading} className={styles.primaryButton}>
                         {loading ? "Saving..." : "Add"}
                     </button>
