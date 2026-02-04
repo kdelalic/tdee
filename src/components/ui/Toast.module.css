@@ -1,0 +1,93 @@
+.container {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    max-width: 400px;
+}
+
+@media (max-width: 480px) {
+    .container {
+        left: var(--spacing-md);
+        right: var(--spacing-md);
+        bottom: var(--spacing-md);
+        max-width: none;
+    }
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.success .icon {
+    background: var(--success-bg);
+    color: var(--success);
+}
+
+.error .icon {
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.info .icon {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.message {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--foreground);
+}
+
+.close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    font-size: 18px;
+    color: var(--text-tertiary);
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.close:hover {
+    background: var(--surface-hover);
+    color: var(--foreground);
+}

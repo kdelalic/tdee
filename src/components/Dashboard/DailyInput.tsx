@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { addDailyEntry, getDailyEntry } from "@/lib/firebase/firestore";
+import { useToast } from "@/components/ui/Toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import styles from "./Dashboard.module.css";
 
 interface DailyInputProps {
@@ -20,6 +22,9 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
         return `${year}-${month}-${day}`;
     });
     const [loading, setLoading] = useState(false);
+    const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
+    const [pendingEntry, setPendingEntry] = useState<{ date: string; weight: number; calories: number } | null>(null);
+    const { showToast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,7 +37,7 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
             };
 
             if (entryData.weight < 0 || entryData.calories < 0) {
-                alert("Values cannot be negative");
+                showToast("Values cannot be negative", "error");
                 setLoading(false);
                 return;
             }
@@ -40,24 +45,49 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
             // Check for existing entry
             const existing = await getDailyEntry(userId, date);
             if (existing) {
-                const confirmed = window.confirm("An entry for this date already exists. Do you want to overwrite it?");
-                if (!confirmed) {
-                    setLoading(false);
-                    return;
-                }
+                setPendingEntry(entryData);
+                setShowOverwriteDialog(true);
+                setLoading(false);
+                return;
             }
 
             await addDailyEntry(userId, entryData);
 
             setWeight("");
             setCalories("");
+            showToast("Entry added");
             onEntryAdded();
         } catch (error) {
             console.error("Failed to save entry", error);
-            alert("Failed to save entry");
+            showToast("Failed to save entry", "error");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleConfirmOverwrite = async () => {
+        if (!pendingEntry) return;
+        setShowOverwriteDialog(false);
+        setLoading(true);
+
+        try {
+            await addDailyEntry(userId, pendingEntry);
+            setWeight("");
+            setCalories("");
+            showToast("Entry updated");
+            onEntryAdded();
+        } catch (error) {
+            console.error("Failed to save entry", error);
+            showToast("Failed to save entry", "error");
+        } finally {
+            setLoading(false);
+            setPendingEntry(null);
+        }
+    };
+
+    const handleCancelOverwrite = () => {
+        setShowOverwriteDialog(false);
+        setPendingEntry(null);
     };
 
     return (
@@ -65,8 +95,9 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
             <h2 className={styles.cardTitle}>Add Daily Entry</h2>
             <form onSubmit={handleSubmit} className={styles.formRow}>
                 <div className={styles.inputGroup}>
-                    <label>Date</label>
+                    <label htmlFor="daily-date">Date</label>
                     <input
+                        id="daily-date"
                         type="date"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
@@ -75,8 +106,9 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                     />
                 </div>
                 <div className={styles.inputGroup}>
-                    <label>Weight (lbs)</label>
+                    <label htmlFor="daily-weight">Weight (lbs)</label>
                     <input
+                        id="daily-weight"
                         type="number"
                         step="0.1"
                         min="0"
@@ -88,8 +120,9 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                     />
                 </div>
                 <div className={styles.inputGroup}>
-                    <label>Calories</label>
+                    <label htmlFor="daily-calories">Calories</label>
                     <input
+                        id="daily-calories"
                         type="number"
                         min="0"
                         placeholder="0"
@@ -106,6 +139,18 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
                     </button>
                 </div>
             </form>
+
+            {showOverwriteDialog && (
+                <ConfirmDialog
+                    title="Overwrite Entry"
+                    message="An entry for this date already exists. Do you want to overwrite it with the new values?"
+                    confirmLabel="Overwrite"
+                    cancelLabel="Cancel"
+                    variant="default"
+                    onConfirm={handleConfirmOverwrite}
+                    onCancel={handleCancelOverwrite}
+                />
+            )}
         </div>
     );
 }

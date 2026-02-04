@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UserSettings, updateUserSettings } from "@/lib/firebase/firestore";
+import { useToast } from "@/components/ui/Toast";
 import styles from "./Dashboard.module.css";
 
 interface SettingsFormProps {
@@ -23,6 +24,7 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
     const [weeklyGoalRate, setWeeklyGoalRate] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     useEffect(() => {
         if (existingSettings) {
@@ -60,7 +62,7 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
         const rate = parseFloat(weeklyGoalRate);
 
         if (startW < 0 || goalW < 0 || rate < 0) {
-            alert("Values cannot be negative");
+            showToast("Values cannot be negative", "error");
             setLoading(false);
             return;
         }
@@ -115,6 +117,7 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
 
         try {
             await updateUserSettings(userId, newSettings);
+            showToast("Settings saved");
             onSave();
         } catch (err) {
             console.error(err);

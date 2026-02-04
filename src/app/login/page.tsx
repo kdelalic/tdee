@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/firebase";
+import { getAuthErrorMessage } from "@/lib/firebase/auth-errors";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./login.module.css";
@@ -18,8 +19,8 @@ export default function LoginPage() {
         try {
             await signInWithEmailAndPassword(auth, email, password);
             router.push("/dashboard");
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(getAuthErrorMessage(err));
         }
     };
 
@@ -29,22 +30,30 @@ export default function LoginPage() {
                 <h1 className={styles.title}>Login</h1>
                 {error && <p className={styles.error}>{error}</p>}
                 <form onSubmit={handleLogin} className={styles.form}>
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={styles.input}
-                        required
-                    />
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={styles.input}
-                        required
-                    />
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="login-email" className={styles.label}>Email</label>
+                        <input
+                            id="login-email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className={styles.input}
+                            required
+                        />
+                    </div>
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="login-password" className={styles.label}>Password</label>
+                        <input
+                            id="login-password"
+                            type="password"
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className={styles.input}
+                            required
+                        />
+                    </div>
                     <button type="submit" className={styles.button}>
                         Log In
                     </button>

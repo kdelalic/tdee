@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { updateDailyEntry, DailyEntry } from "@/lib/firebase/firestore";
+import { useToast } from "@/components/ui/Toast";
 import styles from "./EditEntryModal.module.css";
 
 interface EditEntryModalProps {
@@ -15,6 +16,7 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
     const [weight, setWeight] = useState(entry.weight.toString());
     const [calories, setCalories] = useState(entry.calories.toString());
     const [loading, setLoading] = useState(false);
+    const { showToast } = useToast();
 
     // Close on escape key
     useEffect(() => {
@@ -40,7 +42,7 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
             const w = parseFloat(weight);
             const c = parseInt(calories);
             if (w < 0 || c < 0) {
-                alert("Values cannot be negative");
+                showToast("Values cannot be negative", "error");
                 setLoading(false);
                 return;
             }
@@ -50,10 +52,11 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
                 weight: w,
                 calories: c,
             });
+            showToast("Entry updated");
             onSave();
         } catch (error) {
             console.error("Failed to update entry", error);
-            alert("Failed to update entry");
+            showToast("Failed to update entry", "error");
         } finally {
             setLoading(false);
         }
@@ -75,9 +78,14 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
 
     return (
         <div className={styles.backdrop} onClick={handleBackdropClick}>
-            <div className={styles.modal}>
+            <div
+                className={styles.modal}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="edit-modal-title"
+            >
                 <div className={styles.header}>
-                    <h2 className={styles.title}>Edit Entry</h2>
+                    <h2 id="edit-modal-title" className={styles.title}>Edit Entry</h2>
                     <button onClick={onClose} className={styles.closeButton} aria-label="Close">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>

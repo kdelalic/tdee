@@ -15,6 +15,8 @@ import styles from "@/components/Dashboard/Dashboard.module.css";
 import DashboardSkeleton from "@/components/Dashboard/DashboardSkeleton";
 import Link from "next/link";
 import ThemeToggle from "@/components/Theme/ThemeToggle";
+import { useToast } from "@/components/ui/Toast";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
@@ -23,6 +25,8 @@ export default function DashboardPage() {
     const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
     const [loadingData, setLoadingData] = useState(true);
     const [editingEntry, setEditingEntry] = useState<DailyEntry | null>(null);
+    const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     // Auth protection
     useEffect(() => {
@@ -59,18 +63,25 @@ export default function DashboardPage() {
         }
     }, [user]);
 
-    const handleDeleteEntry = async (entryId: string) => {
-        if (!confirm("Are you sure you want to delete this entry?")) return;
+    const handleDeleteEntry = (entryId: string) => {
+        setDeletingEntryId(entryId);
+    };
+
+    const confirmDeleteEntry = async () => {
+        if (!deletingEntryId) return;
 
         try {
-            await deleteDailyEntry(entryId);
-            if (editingEntry?.id === entryId) {
+            await deleteDailyEntry(deletingEntryId);
+            if (editingEntry?.id === deletingEntryId) {
                 setEditingEntry(null);
             }
+            showToast("Entry deleted");
             refreshData();
         } catch (error) {
             console.error("Error deleting entry:", error);
-            alert("Failed to delete entry");
+            showToast("Failed to delete entry", "error");
+        } finally {
+            setDeletingEntryId(null);
         }
     };
 
@@ -158,6 +169,19 @@ export default function DashboardPage() {
                     userId={user.uid}
                     onSave={handleEntrySaved}
                     onClose={handleCloseModal}
+                />
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deletingEntryId && (
+                <ConfirmDialog
+                    title="Delete Entry"
+                    message="Are you sure you want to delete this entry? This action cannot be undone."
+                    confirmLabel="Delete"
+                    cancelLabel="Cancel"
+                    variant="danger"
+                    onConfirm={confirmDeleteEntry}
+                    onCancel={() => setDeletingEntryId(null)}
                 />
             )}
         </div>
