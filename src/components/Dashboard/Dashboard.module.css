@@ -22,6 +22,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+  --header-btn-size: 2.5rem;
 }
 
 .title {
@@ -38,8 +39,8 @@
 }
 
 .logoutButton {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--header-btn-size);
+  height: var(--header-btn-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,8 +82,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--header-btn-size);
+  height: var(--header-btn-size);
   font-size: 1.25rem;
   background-color: transparent;
   border: 1px solid var(--border);
@@ -102,8 +103,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--header-btn-size);
+  height: var(--header-btn-size);
   font-size: 1.25rem;
   background-color: transparent;
   border: 1px solid var(--border);
@@ -148,8 +149,8 @@
 }
 
 .tipsButton {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: var(--header-btn-size);
+  height: var(--header-btn-size);
   background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -371,6 +372,11 @@
   font-weight: 500;
   /* Prevent zoom on iOS */
   font-size: 16px;
+  /* Fix for iOS date input width */
+  min-width: 0;
+  max-width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 @media (min-width: 640px) {

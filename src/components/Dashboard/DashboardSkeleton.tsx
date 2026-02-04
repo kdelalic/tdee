@@ -9,10 +9,11 @@ export default function DashboardSkeleton() {
             <header className={styles.header}>
                 <Skeleton width={180} height={40} />
                 <div className={styles.headerActions}>
-                    <Skeleton width={80} height={40} />
-                    <Skeleton width={120} height={40} />
-                    <Skeleton width={40} height={40} borderRadius={12} />
-                    <Skeleton width={80} height={40} />
+                    <Skeleton width="var(--header-btn-size)" height="var(--header-btn-size)" borderRadius="var(--radius-lg)" />
+                    <Skeleton width="var(--header-btn-size)" height="var(--header-btn-size)" borderRadius="var(--radius-lg)" />
+                    <Skeleton width="var(--header-btn-size)" height="var(--header-btn-size)" borderRadius="var(--radius-lg)" />
+                    <Skeleton width="var(--header-btn-size)" height="var(--header-btn-size)" borderRadius="var(--radius-lg)" />
+                    <Skeleton width="var(--header-btn-size)" height="var(--header-btn-size)" borderRadius="var(--radius-lg)" />
                 </div>
             </header>
 
