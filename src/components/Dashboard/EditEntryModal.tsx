@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { updateDailyEntry, DailyEntry } from "@/lib/firebase/firestore";
 import { useToast } from "@/components/ui/Toast";
+import { parseEntryForm } from "@/lib/validation";
 import styles from "./EditEntryModal.module.css";
 
 interface EditEntryModalProps {
@@ -40,19 +41,22 @@ export default function EditEntryModal({ entry, userId, onSave, onClose }: EditE
         e.preventDefault();
         setLoading(true);
         try {
-            const w = parseFloat(weight);
-            const c = parseInt(calories);
-            if (w < 0 || c < 0) {
-                showToast("Values cannot be negative", "error");
+            // Use centralized validation
+            const { data: parsedData, error: validationError } = parseEntryForm({
+                weight,
+                calories,
+            });
+
+            if (validationError || !parsedData) {
+                showToast(validationError || "Invalid input", "error");
                 setLoading(false);
                 return;
             }
 
             await updateDailyEntry(userId, entry, {
                 date: entry.date,
-                weight: w,
-                calories: c,
-
+                weight: parsedData.weight,
+                calories: parsedData.calories,
             });
             showToast("Entry updated");
             onSave();

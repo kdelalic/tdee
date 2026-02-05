@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { addDailyEntry, getDailyEntry } from "@/lib/firebase/firestore";
 import { useToast } from "@/components/ui/Toast";
+import { parseEntryForm } from "@/lib/validation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import styles from "./Dashboard.module.css";
 
@@ -31,17 +32,24 @@ export default function DailyInput({ userId, onEntryAdded }: DailyInputProps) {
         e.preventDefault();
         setLoading(true);
         try {
-            const entryData = {
+            // Use centralized validation
+            const { data: parsedData, error: validationError } = parseEntryForm({
+                weight,
+                calories,
                 date,
-                weight: parseFloat(weight),
-                calories: parseInt(calories),
-            };
+            });
 
-            if (entryData.weight < 0 || entryData.calories < 0) {
-                showToast("Values cannot be negative", "error");
+            if (validationError || !parsedData) {
+                showToast(validationError || "Invalid input", "error");
                 setLoading(false);
                 return;
             }
+
+            const entryData = {
+                date: parsedData.date!,
+                weight: parsedData.weight,
+                calories: parsedData.calories,
+            };
 
             // Check for existing entry
             const existing = await getDailyEntry(userId, date);

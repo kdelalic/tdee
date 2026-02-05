@@ -1,5 +1,6 @@
 import { DailyEntry } from "@/lib/firebase/firestore";
 import { escapeCSV } from "@/lib/validation";
+import { formatDisplayDate } from "@/lib/date-utils";
 import styles from "./Dashboard.module.css";
 
 interface HistoryTableProps {
@@ -9,16 +10,9 @@ interface HistoryTableProps {
 }
 
 export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTableProps) {
-    // Format date helper
-    const formatDate = (dateString: string) => {
-        const [year, month, day] = dateString.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-    };
+    // Format date helper using centralized date utility
+    const formatDate = (dateString: string) =>
+        formatDisplayDate(dateString, { month: 'short', day: 'numeric', year: 'numeric' });
 
     const handleExport = () => {
         if (!entries.length) return;

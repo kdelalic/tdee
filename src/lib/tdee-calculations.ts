@@ -1,4 +1,6 @@
 import { DailyEntry } from "./firebase/firestore";
+import { calculateLinearRegression } from "./math-utils";
+import { CALORIES_PER_POUND, MIN_ENTRIES_FOR_TDEE, ANALYSIS_PERIOD_DAYS } from "./constants";
 
 export interface TDEEResult {
     tdee: number;
@@ -17,39 +19,28 @@ export interface TDEEResult {
  */
 export const calculateTDEE = (entries: DailyEntry[]): TDEEResult | null => {
     // Need at least roughly a week of data to start showing meaningful numbers
-    if (entries.length < 7) return null;
+    if (entries.length < MIN_ENTRIES_FOR_TDEE) return null;
 
     // Sort by date ascending
     const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Use last 21 days for calculation if available, otherwise use what we have
-    const recentEntries = sorted.slice(-21);
+    // Use last ANALYSIS_PERIOD_DAYS for calculation if available, otherwise use what we have
+    const recentEntries = sorted.slice(-ANALYSIS_PERIOD_DAYS);
 
     // 1. Average Calories
     const totalCals = recentEntries.reduce((sum, e) => sum + e.calories, 0);
     const avgCals = totalCals / recentEntries.length;
 
-    // 2. Weight Trend (Linear Regression)
-    // We want the slope of the line (m) in y = mx + b
-    // y = weight, x = days from start
-    // This gives us avg lbs gained/lost per day
+    // 2. Weight Trend using centralized linear regression
+    const data = recentEntries.map((e, i) => ({ x: i, y: e.weight }));
+    const regression = calculateLinearRegression(data);
 
-    const xValues = recentEntries.map((e, i) => i); // 0, 1, 2...
-    const yValues = recentEntries.map(e => e.weight);
+    if (!regression) return null;
 
-    const n = recentEntries.length;
-    const sumX = xValues.reduce((a, b) => a + b, 0);
-    const sumY = yValues.reduce((a, b) => a + b, 0);
-    const sumXY = xValues.reduce((sum, x, i) => sum + x * yValues[i], 0);
-    const sumXX = xValues.reduce((sum, x) => sum + x * x, 0);
-
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-
-    // slope is "lbs per day" change
+    const slope = regression.slope; // lbs per day change
 
     // 3. TDEE Calculation
-    // 3500 calories per lb of fat
-    const caloricSurplusOrDeficit = slope * 3500;
+    const caloricSurplusOrDeficit = slope * CALORIES_PER_POUND;
     const tdee = avgCals - caloricSurplusOrDeficit;
 
     return {

@@ -14,6 +14,9 @@ import {
     ReferenceLine,
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
+import { parseYYYYMMDD, daysBetween } from "@/lib/date-utils";
+import { calculateLinearRegression, calculateTrendLine, DataPoint } from "@/lib/math-utils";
+import { CALORIES_PER_POUND } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
 // Tooltip types and component extracted outside for performance
@@ -117,8 +120,7 @@ function calculateAverages(entries: DailyEntry[]): AveragesData {
     const lastMonthEntries: DailyEntry[] = [];
 
     entries.forEach(entry => {
-        const [year, month, day] = entry.date.split('-').map(Number);
-        const entryDate = new Date(year, month - 1, day);
+        const entryDate = parseYYYYMMDD(entry.date);
 
         // This week
         if (entryDate >= thisWeekStart && entryDate <= today) {
@@ -176,52 +178,18 @@ function calculateRollingTDEE(windowEntries: DailyEntry[]): number | null {
     // Average Calories
     const avgCals = sorted.reduce((sum, e) => sum + e.calories, 0) / sorted.length;
 
-    // Weight Trend (Linear Regression)
-    const xValues = sorted.map((_, i) => i);
-    const yValues = sorted.map(e => e.weight);
+    // Weight Trend using centralized linear regression
+    const data: DataPoint[] = sorted.map((e, i) => ({ x: i, y: e.weight }));
+    const regression = calculateLinearRegression(data);
 
-    const n = sorted.length;
-    const sumX = xValues.reduce((a, b) => a + b, 0);
-    const sumY = yValues.reduce((a, b) => a + b, 0);
-    const sumXY = xValues.reduce((sum, x, i) => sum + x * yValues[i], 0);
-    const sumXX = xValues.reduce((sum, x) => sum + x * x, 0);
+    if (!regression) return null;
 
-    const denominator = n * sumXX - sumX * sumX;
-    if (denominator === 0) return null;
-
-    const slope = (n * sumXY - sumX * sumY) / denominator;
-
-    // TDEE = avgCals - (slope * 3500)
-    const tdee = avgCals - (slope * 3500);
+    // TDEE = avgCals - (slope * CALORIES_PER_POUND)
+    const tdee = avgCals - (regression.slope * CALORIES_PER_POUND);
 
     return Math.round(tdee);
 }
 
-// Helper to calculate linear regression trend points
-function calculateTrendLines(data: { x: number; y: number }[]): number[] {
-    if (data.length < 2) return data.map(d => d.y);
-
-    const n = data.length;
-    let sumX = 0;
-    let sumY = 0;
-    let sumXY = 0;
-    let sumXX = 0;
-
-    for (let i = 0; i < n; i++) {
-        sumX += data[i].x;
-        sumY += data[i].y;
-        sumXY += data[i].x * data[i].y;
-        sumXX += data[i].x * data[i].x;
-    }
-
-    const denominator = n * sumXX - sumX * sumX;
-    if (denominator === 0) return data.map(d => d.y);
-
-    const slope = (n * sumXY - sumX * sumY) / denominator;
-    const intercept = (sumY - slope * sumX) / n;
-
-    return data.map(d => slope * d.x + intercept);
-}
 
 interface WeeklyRateData {
     actualRate: number | null;
@@ -247,11 +215,7 @@ function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | nul
     const earliest = sortedEntries[0];
     const latest = sortedEntries[sortedEntries.length - 1];
 
-    const [y1, m1, d1] = earliest.date.split('-').map(Number);
-    const [y2, m2, d2] = latest.date.split('-').map(Number);
-    const date1 = new Date(y1, m1 - 1, d1);
-    const date2 = new Date(y2, m2 - 1, d2);
-    const daysDiff = (date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24);
+    const daysDiff = daysBetween(earliest.date, latest.date);
 
     // Safety check for zero days diff
     if (daysDiff <= 0) {
@@ -281,13 +245,11 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
         const weightPoints = reversed.map((e, i) => ({ x: i, y: e.weight }));
         const caloriePoints = reversed.map((e, i) => ({ x: i, y: e.calories }));
 
-        const weightTrends = calculateTrendLines(weightPoints);
-        const calorieTrends = calculateTrendLines(caloriePoints);
+        const weightTrends = calculateTrendLine(weightPoints);
+        const calorieTrends = calculateTrendLine(caloriePoints);
 
         return reversed.map((entry, index) => {
-            // Parse YYYY-MM-DD directly to avoid timezone issues
-            const [year, month, day] = entry.date.split('-').map(Number);
-            const dateObj = new Date(year, month - 1, day);
+            const dateObj = parseYYYYMMDD(entry.date);
 
             // Calculate rolling TDEE using a window of entries up to this point
             // Use the last 14 days window for TDEE calculation
@@ -312,9 +274,46 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
 
     const weeklyRate = useMemo(() => calculateWeeklyRate(entries, settings), [entries, settings]);
 
+    // Memoize chart domain calculations to avoid recalculating on every render
+    const { weightDomain, caloriesDomain, tdeeDomain, tdeeValues } = useMemo(() => {
+        if (!entries || entries.length < 2) {
+            return {
+                weightDomain: [0, 100] as [number, number],
+                caloriesDomain: [0, 3000] as [number, number],
+                tdeeDomain: [1500, 3000] as [number, number],
+                tdeeValues: [] as number[],
+            };
+        }
+
+        const minWeight = Math.min(...entries.map((e) => e.weight));
+        const maxWeight = Math.max(...entries.map((e) => e.weight));
+        const weightDom: [number, number] = [Math.floor(minWeight - 2), Math.ceil(maxWeight + 2)];
+
+        const minCalories = Math.min(...entries.map((e) => e.calories));
+        const maxCalories = Math.max(...entries.map((e) => e.calories));
+        const caloriesDom: [number, number] = [Math.floor(minCalories - 100), Math.ceil(maxCalories + 100)];
+
+        const tdeeVals = data.map(d => d.tdee).filter((v): v is number => v !== null);
+        const tdeeDom: [number, number] = tdeeVals.length > 0
+            ? [Math.floor(Math.min(...tdeeVals) - 100), Math.ceil(Math.max(...tdeeVals) + 100)]
+            : [1500, 3000];
+
+        return {
+            weightDomain: weightDom,
+            caloriesDomain: caloriesDom,
+            tdeeDomain: tdeeDom,
+            tdeeValues: tdeeVals,
+        };
+    }, [entries, data]);
+
+    // Memoize isOnTrack calculation
+    const isOnTrack = useMemo(() => {
+        if (weeklyRate?.actualRate == null || settings?.weeklyGoal == null) return null;
+        return Math.sign(weeklyRate.actualRate) === Math.sign(settings.weeklyGoal) &&
+            Math.abs(weeklyRate.actualRate) <= Math.abs(settings.weeklyGoal) * 1.5;
+    }, [weeklyRate?.actualRate, settings?.weeklyGoal]);
+
     if (!entries || entries.length < 2) {
-        // Return a better empty state or just rely on the parent to handle "no data"
-        // But the parent is using this in a grid, so let's show a placeholder
         return (
             <div className={styles.card}>
                 <h2 className={styles.cardTitle}>Trends</h2>
@@ -325,37 +324,10 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
         );
     }
 
-    // Calculate generic domains for Y-axis
-    const minWeight = Math.min(...entries.map((e) => e.weight));
-    const maxWeight = Math.max(...entries.map((e) => e.weight));
-    const weightDomain = [Math.floor(minWeight - 2), Math.ceil(maxWeight + 2)];
-
-    const minCalories = Math.min(...entries.map((e) => e.calories));
-    const maxCalories = Math.max(...entries.map((e) => e.calories));
-    const caloriesDomain = [Math.floor(minCalories - 100), Math.ceil(maxCalories + 100)];
-
-    // Calculate TDEE domain (filter out null values)
-    const tdeeValues = data.map(d => d.tdee).filter((v): v is number => v !== null);
-    const tdeeDomain = tdeeValues.length > 0
-        ? [Math.floor(Math.min(...tdeeValues) - 100), Math.ceil(Math.max(...tdeeValues) + 100)]
-        : [1500, 3000]; // Default range if no TDEE data
-
-    // Colors
+    // Colors (static, no need to memoize)
     const COLOR_WEIGHT = "var(--primary)";
     const COLOR_CALORIES = "#8b5cf6"; // Violet 500
     const COLOR_TDEE = "#10b981"; // Emerald 500
-
-    // Helpers for weekly rate display
-    const formatRate = (rate: number) => {
-        const absRate = Math.abs(rate);
-        const direction = rate < 0 ? 'losing' : rate > 0 ? 'gaining' : 'maintaining';
-        return { absRate: absRate.toFixed(2), direction };
-    };
-
-    const isOnTrack = (weeklyRate?.actualRate != null && settings?.weeklyGoal != null)
-        ? Math.sign(weeklyRate.actualRate) === Math.sign(settings.weeklyGoal) &&
-        Math.abs(weeklyRate.actualRate) <= Math.abs(settings.weeklyGoal) * 1.5
-        : null;
 
     return (
         <div className={styles.card}>
@@ -568,21 +540,26 @@ interface AveragesSectionProps {
     entries: DailyEntry[];
 }
 
-function AveragesSection({ entries }: AveragesSectionProps) {
+const AveragesSection = memo(function AveragesSection({ entries }: AveragesSectionProps) {
     const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
 
     const averages = useMemo(() => calculateAverages(entries), [entries]);
 
-    const currentPeriod = view === 'weekly' ? averages.thisWeek : averages.thisMonth;
-    const previousPeriod = view === 'weekly' ? averages.lastWeek : averages.lastMonth;
+    // Memoize period selection to avoid recalculating on every render
+    const { currentPeriod, previousPeriod } = useMemo(() => ({
+        currentPeriod: view === 'weekly' ? averages.thisWeek : averages.thisMonth,
+        previousPeriod: view === 'weekly' ? averages.lastWeek : averages.lastMonth,
+    }), [view, averages]);
 
-    const weightChange = currentPeriod.weight && previousPeriod.weight
-        ? ((currentPeriod.weight - previousPeriod.weight) / previousPeriod.weight) * 100
-        : null;
-
-    const caloriesChange = currentPeriod.calories && previousPeriod.calories
-        ? ((currentPeriod.calories - previousPeriod.calories) / previousPeriod.calories) * 100
-        : null;
+    // Memoize change calculations
+    const { weightChange, caloriesChange } = useMemo(() => ({
+        weightChange: currentPeriod.weight && previousPeriod.weight
+            ? ((currentPeriod.weight - previousPeriod.weight) / previousPeriod.weight) * 100
+            : null,
+        caloriesChange: currentPeriod.calories && previousPeriod.calories
+            ? ((currentPeriod.calories - previousPeriod.calories) / previousPeriod.calories) * 100
+            : null,
+    }), [currentPeriod, previousPeriod]);
 
     return (
         <div className={styles.averagesContainer}>
@@ -660,4 +637,6 @@ function AveragesSection({ entries }: AveragesSectionProps) {
             )}
         </div>
     );
-}
+});
+
+AveragesSection.displayName = "AveragesSection";
