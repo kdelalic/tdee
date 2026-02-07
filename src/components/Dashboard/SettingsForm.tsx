@@ -265,17 +265,18 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                             <button
                                 type="button"
                                 onClick={() => setSex('male')}
-                                className={`${styles.toggleButton} ${sex === 'male' ? styles.active : ''}`}
+                                className={`${styles.toggleButton} ${sex === 'male' ? styles.maleActive : ''}`}
                             >
                                 Male
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSex('female')}
-                                className={`${styles.toggleButton} ${sex === 'female' ? styles.active : ''}`}
+                                className={`${styles.toggleButton} ${sex === 'female' ? styles.femaleActive : ''}`}
                             >
                                 Female
                             </button>
+
                         </div>
                     </div>
 

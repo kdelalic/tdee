@@ -832,6 +832,19 @@
     background: rgba(34, 197, 94, 0.1);
 }
 
+.toggleButton.maleActive {
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.2);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.toggleButton.femaleActive {
+    color: #ec4899;
+    border-color: rgba(236, 72, 153, 0.2);
+    background: rgba(236, 72, 153, 0.1);
+}
+
+
 .compactInput {
     max-width: 200px;
 }
