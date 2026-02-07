@@ -25,6 +25,8 @@
   --error: #ef4444; /* Red 500 */
   --error-bg: #fef2f2; /* Red 50 */
   --warning: #f59e0b; /* Amber 500 */
+  --warm-text: #f97316; /* Orange 500 - for "gains"/warm accents */
+
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -52,9 +54,10 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     /* Premium Dark Mode */
-    --background: #020617; /* Slate 950 - deeper/richer than before */
-    --card-bg: #0f172a; /* Slate 900 */
-    --surface-hover: #1e293b; /* Slate 800 */
+    --background: #020617; /* Slate 950 - Main background */
+    --card-bg: #0f172a; /* Slate 900 - Cards/Elevated */
+    --surface-hover: #1e293b; /* Slate 800 - Hover/Secondary backgrounds */
+    --surface-active: #334155; /* Slate 700 - Active states */
     
     --foreground: #f8fafc; /* Slate 50 */
     --text-secondary: #94a3b8; /* Slate 400 */
@@ -71,6 +74,7 @@
     --success-bg: rgba(16, 185, 129, 0.1);
     --error: #f87171; /* Red 400 */
     --error-bg: rgba(239, 68, 68, 0.1);
+    --warm-text: #fb923c; /* Orange 400 */
   }
 }
 

@@ -88,11 +88,14 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
 
                 <div className={styles.statRow}>
                     <span className={styles.statLabel}>You&apos;ve {stats.totalLost >= 0 ? "Lost" : "Gained"}:</span>
-                    <span className={`${styles.statValue} ${(isLossGoal && stats.totalLost >= 0) || (!isLossGoal && stats.totalLost <= 0)
+                    <span className={`${styles.statValue} ${(isLossGoal && stats.totalLost >= 0)
                         ? styles.textSuccess
-                        : styles.textError
-                        }`}>
-                        {Math.abs(stats.totalLost)} <small>{settings.units}</small>
+                        : (isLossGoal && stats.totalLost < 0) ? "text-warm" // Will add utility class or inline style
+                            : (!isLossGoal && stats.totalLost <= 0) ? styles.textSuccess : "text-warm"
+                        }`}
+                        style={{ color: (isLossGoal && stats.totalLost < 0) || (!isLossGoal && stats.totalLost > 0) ? 'var(--warm-text)' : undefined }}
+                    >
+                        {Math.abs(stats.totalLost).toLocaleString()} <small>{settings.units}</small>
                     </span>
                 </div>
 
@@ -103,7 +106,13 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                     <span className={styles.statLabel}>Logging Streak:</span>
                     <span className={styles.statValue}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            🔥 {streak} <small>day{streak !== 1 ? 's' : ''}</small>
+                            {streak > 0 ? (
+                                <>🔥 {streak} <small>day{streak !== 1 ? 's' : ''}</small></>
+                            ) : (
+                                <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                    Start your streak today!
+                                </span>
+                            )}
                         </span>
                     </span>
                 </div>
@@ -117,14 +126,14 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                                 {isInSetupPhase(settings.startDate, SETUP_PHASE_DAYS) ? "Estimated TDEE:" : "Current TDEE:"}
                             </span>
                             <span className={styles.statValue}>
-                                ~{stats.tdee} <small>Cal/Day</small>
+                                ~{stats.tdee.toLocaleString()} <small>Cal/Day</small>
                             </span>
                         </div>
 
                         <div className={styles.statRow}>
                             <span className={styles.statLabel}>Target Daily Calories:</span>
                             <span className={`${styles.statValue} ${styles.textPrimary}`}>
-                                {stats.targetCalories} <small>Cal/Day</small>
+                                {stats.targetCalories.toLocaleString()} <small>Cal/Day</small>
                             </span>
                         </div>
 

@@ -5,7 +5,7 @@
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 3rem; /* Increased gap between sections */
   min-height: 100vh;
 }
 
@@ -213,12 +213,18 @@
   background-color: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: 2rem;
+  padding: 2.25rem; /* Increased padding */
   box-shadow: var(--shadow-sm);
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
   overflow: hidden;
   height: fit-content; /* Critical fix for height stretching */
+  animation: fadeIn 0.5s ease-out backwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 640px) {
@@ -234,9 +240,9 @@
 }
 
 .cardTitle {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
+  font-size: 1.5rem; /* Increased font size for better hierarchy */
+  font-weight: 700;
+  margin-bottom: 2rem; /* Increased bottom margin */
   color: var(--foreground);
   display: flex;
   align-items: center;
@@ -533,6 +539,15 @@
 
 .table tr:last-child td {
   border-bottom: none;
+}
+
+/* Alternating row colors for better scanability */
+.table tr:nth-child(even) td {
+  background-color: rgba(0, 0, 0, 0.015);
+}
+
+[data-theme="dark"] .table tr:nth-child(even) td {
+  background-color: rgba(255, 255, 255, 0.015);
 }
 
 .table tr:hover td {
@@ -1365,8 +1380,9 @@
 
 .skeletonChartGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 3rem;
+    margin-top: 1rem;
 }
 
 .skeletonChartContainer {

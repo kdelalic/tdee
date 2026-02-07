@@ -82,8 +82,8 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
                             entries.map((entry) => (
                                 <tr key={entry.id || entry.date}>
                                     <td>{formatDate(entry.date)}</td>
-                                    <td>{entry.weight}</td>
-                                    <td>{entry.calories}</td>
+                                    <td>{typeof entry.weight === 'number' ? entry.weight.toLocaleString() : entry.weight}</td>
+                                    <td>{typeof entry.calories === 'number' ? entry.calories.toLocaleString() : entry.calories}</td>
 
                                     <td>
                                         <button
@@ -142,11 +142,11 @@ export default function HistoryTable({ entries, onDelete, onEdit }: HistoryTable
                             <div className={styles.mobileCardBody}>
                                 <div className={styles.mobileCardStat}>
                                     <span className={styles.mobileCardLabel}>Weight</span>
-                                    <span className={styles.mobileCardValue}>{entry.weight} lbs</span>
+                                    <span className={styles.mobileCardValue}>{typeof entry.weight === 'number' ? entry.weight.toLocaleString() : entry.weight} lbs</span>
                                 </div>
                                 <div className={styles.mobileCardStat}>
                                     <span className={styles.mobileCardLabel}>Calories</span>
-                                    <span className={styles.mobileCardValue}>{entry.calories}</span>
+                                    <span className={styles.mobileCardValue}>{typeof entry.calories === 'number' ? entry.calories.toLocaleString() : entry.calories}</span>
                                 </div>
                             </div>
 

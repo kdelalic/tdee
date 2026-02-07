@@ -11,6 +11,7 @@ import {
     ResponsiveContainer,
     AreaChart,
     Area,
+    Legend,
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
@@ -86,7 +87,42 @@ const ChangeIndicator = memo(({ change, inverted = false }: ChangeIndicatorProps
 
 ChangeIndicator.displayName = "ChangeIndicator";
 
+// Custom Legend for Recharts
+const CustomLegend = memo(({ payload }: any) => {
+    if (!payload) return null;
+
+    return (
+        <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '1rem',
+            marginTop: '1.5rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--border)',
+            width: '100%'
+        }}>
+            {payload.map((entry: any, index: number) => (
+                <div key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: 'var(--foreground)' }}>
+                    <span style={{
+                        display: 'block',
+                        width: '10px',
+                        height: '10px',
+                        backgroundColor: entry.color,
+                        borderRadius: '50%',
+                        flexShrink: 0
+                    }} />
+                    {entry.value}
+                </div>
+            ))}
+        </div>
+    );
+});
+
+CustomLegend.displayName = "CustomLegend";
+
 interface PeriodAverage {
+
     weight: number;
     calories: number;
     entryCount: number;
@@ -577,6 +613,22 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 width={30}
                             />
                             <Tooltip content={<CustomTooltip />} />
+                            <Legend content={<CustomLegend />} />
+                            {/* Target trajectory based on goal - Rendered BEFORE other lines to be behind but visible */}
+
+                            {settings && (
+                                <Line
+                                    type="monotone"
+                                    dataKey="targetWeight"
+                                    name="Target Trajectory"
+                                    stroke="var(--primary)"
+                                    strokeWidth={2.5} /* Made thicker */
+                                    strokeDasharray="5 5"
+                                    dot={false}
+                                    activeDot={false}
+                                    strokeOpacity={0.8}
+                                />
+                            )}
                             {/* Smoothed trend area (shows the "true" trend) */}
                             <Area
                                 type="monotone"
@@ -585,7 +637,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 stroke="#10b981"
                                 fillOpacity={1}
                                 fill="url(#colorSmoothed)"
-                                strokeWidth={2.5}
+                                strokeWidth={3} /* Made thicker */
                             />
                             {/* Daily weight line (shows fluctuations/noise) */}
                             <Line
@@ -593,63 +645,48 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 dataKey="weight"
                                 name="Daily Weight"
                                 stroke={COLOR_WEIGHT}
-                                strokeWidth={1.5}
-                                dot={false}
-                                activeDot={{ r: 5, fill: COLOR_WEIGHT }}
-                                strokeOpacity={0.7}
+                                strokeWidth={2} /* Made slightly thicker */
+                                dot={{ r: 3, fill: COLOR_WEIGHT }} /* Added small dots for better definition */
+                                activeDot={{ r: 6, fill: COLOR_WEIGHT, strokeWidth: 0 }}
+                                strokeOpacity={0.6}
                             />
-                            {/* Linear trend for reference */}
-                            <Line
-                                type="linear"
-                                dataKey="weightTrend"
-                                name="Linear Trend"
-                                stroke="var(--text-tertiary)"
-                                strokeWidth={1}
-                                strokeDasharray="4 4"
-                                dot={false}
-                                activeDot={false}
-                                strokeOpacity={0.5}
-                            />
-                            {/* Target trajectory based on goal */}
-                            {settings && (
-                                <Line
-                                    type="monotone"
-                                    dataKey="targetWeight"
-                                    name="Target Trajectory"
-                                    stroke="var(--primary)"
-                                    strokeWidth={2}
-                                    strokeDasharray="5 5"
-                                    dot={false}
-                                    activeDot={false}
-                                />
-                            )}
+                            {/* Linear trend for reference - Hidden from Legend usually, or keep minimal */}
+                            {/* Removed Linear Trend from visual chart to reduce clutter, or keep very subtle if interpreted */}
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
 
+                {/* Weekly Insights - Integrated into the grid flow, visually connected or just cleaner */}
+                {annotations.length > 0 && (
+                    <div className={styles.annotationsWrapper} style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                        {/* Styled in CSS to match chart height or separate card */}
+
+                        {/* For now keeping slightly separate but visually consistent */}
+                        <div className={styles.card} style={{ padding: '1.5rem', animation: 'none', border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--surface-hover)' }}>
+                            <h3 className={styles.annotationsTitle} style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Weekly Insights</h3>
+                            <div className={styles.annotationsList} style={{ maxHeight: '350px', overflowY: 'auto' }}>
+
+                                {annotations.map((ann) => (
+                                    <div key={ann.weekNumber} className={styles.annotationItem} style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '0.75rem' }}>
+                                        <div className={styles.annotationHeader} style={{ marginBottom: '0.5rem' }}>
+                                            <span className={`${styles.annotationBadge} ${styles[ann.interpretation]}`}>
+                                                {ann.interpretation === 'water' ? '💧 Water' : ann.interpretation === 'tissue' ? '⚖️ Tissue' : '🔄 Mixed'}
+                                            </span>
+                                            <span className={styles.annotationDate} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                {parseYYYYMMDD(ann.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {parseYYYYMMDD(ann.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </span>
+                                        </div>
+                                        <p className={styles.annotationText} style={{ fontSize: '0.875rem', margin: 0, lineHeight: 1.5 }}>{ann.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
-            {/* Weekly Insights - Moved out of grid for better spacing */}
-            {annotations.length > 0 && (
-                <div className={styles.annotationsWrapper}>
-                    <h3 className={styles.annotationsTitle}>Weekly Insights</h3>
-                    <div className={styles.annotationsList}>
-                        {annotations.map((ann) => (
-                            <div key={ann.weekNumber} className={styles.annotationItem}>
-                                <div className={styles.annotationHeader}>
-                                    <span className={`${styles.annotationBadge} ${styles[ann.interpretation]}`}>
-                                        {ann.interpretation === 'water' ? '💧 Water' : ann.interpretation === 'tissue' ? '⚖️ Tissue' : '🔄 Mixed'}
-                                    </span>
-                                    <span className={styles.annotationDate}>
-                                        {parseYYYYMMDD(ann.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {parseYYYYMMDD(ann.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                    </span>
-                                </div>
-                                <p className={styles.annotationText}>{ann.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Old Weekly Insights Location - Removed */}
 
             <div className={styles.chartGrid}>
                 {/* Calories Chart */}
@@ -672,14 +709,15 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 axisLine={false}
                                 width={40}
                             />
-                            <Tooltip content={<CustomTooltip />} />
+                            <Legend content={<CustomLegend />} />
                             <Line
+
                                 type="monotone"
                                 dataKey="calories"
                                 name="Calories"
                                 stroke={COLOR_CALORIES}
-                                strokeWidth={2}
-                                dot={false}
+                                strokeWidth={2.5}
+                                dot={{ r: 2, fill: COLOR_CALORIES }}
                                 activeDot={{ r: 6 }}
                             />
                             <Line
@@ -724,8 +762,10 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                     width={40}
                                 />
                                 <Tooltip content={<CustomTooltip />} />
+                                <Legend content={<CustomLegend />} />
                                 <Area
                                     type="monotone"
+
                                     dataKey="tdee"
                                     name="TDEE"
                                     stroke={COLOR_TDEE}
