@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
-import { calculateLinearRegression, calculateTrendLine, calculateExponentialMovingAverage, DataPoint } from "@/lib/math-utils";
+import { calculateLinearRegression, calculateTrendLine, calculateExponentialMovingAverage, calculateTargetTrajectory, DataPoint } from "@/lib/math-utils";
 import { CALORIES_PER_POUND, SETUP_PHASE_DAYS, WEIGHT_EMA_SMOOTHING_FACTOR } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
@@ -37,14 +37,19 @@ const CustomTooltip = memo(({ active, payload, label }: CustomTooltipProps) => {
         return (
             <div className={styles.customTooltip}>
                 <p className={styles.tooltipLabel}>{label}</p>
-                {payload.map((p: TooltipPayloadItem) => (
-                    <p key={p.name} className={styles.tooltipItem}>
-                        <span style={{ color: p.color, fontWeight: 'bold' }}>•</span>
-                        <span style={{ color: p.color }}>
-                            {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
-                        </span>
-                    </p>
-                ))}
+                {payload.map((p: TooltipPayloadItem) => {
+                    // Skip Linear Trend and Target Trajectory if value is null
+                    if (p.value === null) return null;
+
+                    return (
+                        <p key={p.name} className={styles.tooltipItem}>
+                            <span style={{ color: p.color, fontWeight: 'bold' }}>•</span>
+                            <span style={{ color: p.color }}>
+                                {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString(undefined, { maximumFractionDigits: 1 }) : p.value}
+                            </span>
+                        </p>
+                    );
+                })}
             </div>
         );
     }
@@ -327,6 +332,13 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
         const weights = reversed.map(e => e.weight);
         const smoothedWeights = calculateExponentialMovingAverage(weights, WEIGHT_EMA_SMOOTHING_FACTOR);
 
+        // Calculate Target Trajectory
+        // Starts from the first recorded weight
+        const startWeight = reversed.length > 0 ? reversed[0].weight : 0;
+        const targetTrajectory = settings
+            ? calculateTargetTrajectory(startWeight, settings.weeklyGoal, reversed.length)
+            : new Array(reversed.length).fill(null);
+
         return reversed.map((entry, index) => {
             const dateObj = parseYYYYMMDD(entry.date);
 
@@ -346,11 +358,12 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                 calories: entry.calories,
                 weightTrend: weightTrends[index],
                 smoothedWeight: smoothedWeights[index],
+                targetWeight: targetTrajectory[index],
                 caloriesTrend: calorieTrends[index],
                 tdee: rollingTDEE,
             };
         });
-    }, [entries]);
+    }, [entries, settings]);
 
     const annotations = useMemo(() => {
         return calculateWeeklyAnnotations(data, settings?.startDate);
@@ -359,19 +372,43 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
     const weeklyRate = useMemo(() => calculateWeeklyRate(entries, settings), [entries, settings]);
 
     // Memoize chart domain calculations to avoid recalculating on every render
-    const { weightDomain, caloriesDomain, tdeeDomain, tdeeValues } = useMemo(() => {
+    const { weightDomain, weightTicks, caloriesDomain, tdeeDomain, tdeeValues } = useMemo(() => {
         if (!entries || entries.length < 2) {
             return {
                 weightDomain: [0, 100] as [number, number],
+                weightTicks: [0, 20, 40, 60, 80, 100],
                 caloriesDomain: [0, 3000] as [number, number],
                 tdeeDomain: [1500, 3000] as [number, number],
                 tdeeValues: [] as number[],
             };
         }
 
-        const minWeight = Math.min(...entries.map((e) => e.weight));
-        const maxWeight = Math.max(...entries.map((e) => e.weight));
-        const weightDom: [number, number] = [Math.floor(minWeight - 2), Math.ceil(maxWeight + 2)];
+        const allWeights = [
+            ...entries.map(e => e.weight),
+            ...(data.map(d => d.targetWeight).filter((v): v is number => v !== null))
+        ];
+
+        const minW = Math.min(...allWeights);
+        const maxW = Math.max(...allWeights);
+
+        // Create a nice domain with some padding
+        const start = Math.floor(minW - 1);
+        const end = Math.ceil(maxW + 1);
+
+        // Calculate Nice Ticks (strictly even increments)
+        const range = end - start;
+        let step = 1;
+        if (range > 20) step = 10;
+        else if (range > 10) step = 5;
+        else if (range > 5) step = 2;
+
+        const ticks: number[] = [];
+        const firstTick = Math.ceil(start / step) * step;
+        for (let t = firstTick; t <= end; t += step) {
+            ticks.push(t);
+        }
+
+        const weightDom: [number, number] = [start, Math.max(end, ticks[ticks.length - 1] || end)];
 
         const minCalories = Math.min(...entries.map((e) => e.calories));
         const maxCalories = Math.max(...entries.map((e) => e.calories));
@@ -384,11 +421,12 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
 
         return {
             weightDomain: weightDom,
+            weightTicks: ticks,
             caloriesDomain: caloriesDom,
             tdeeDomain: tdeeDom,
             tdeeValues: tdeeVals,
         };
-    }, [entries, data]);
+    }, [entries, data, settings?.goalWeight]);
 
     // Memoize isOnTrack calculation
     const isOnTrack = useMemo(() => {
@@ -522,6 +560,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                             />
                             <YAxis
                                 domain={weightDomain}
+                                ticks={weightTicks}
                                 tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
                                 tickLine={false}
                                 axisLine={false}
@@ -559,36 +598,50 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 strokeDasharray="4 4"
                                 dot={false}
                                 activeDot={false}
+                                strokeOpacity={0.5}
                             />
+                            {/* Target trajectory based on goal */}
                             {settings && (
-                                <ReferenceLine y={settings.goalWeight} label="Goal" stroke="var(--success)" strokeDasharray="3 3" />
+                                <Line
+                                    type="monotone"
+                                    dataKey="targetWeight"
+                                    name="Target Trajectory"
+                                    stroke="var(--primary)"
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    dot={false}
+                                    activeDot={false}
+                                />
                             )}
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
 
-                {/* Weekly Insights */}
-                {annotations.length > 0 && (
-                    <div className={styles.annotationsContainer}>
-                        <h3 className={styles.annotationsTitle}>Weekly Insights</h3>
-                        <div className={styles.annotationsList}>
-                            {annotations.map((ann) => (
-                                <div key={ann.weekNumber} className={styles.annotationItem}>
-                                    <div className={styles.annotationHeader}>
-                                        <span className={`${styles.annotationBadge} ${styles[ann.interpretation]}`}>
-                                            {ann.interpretation === 'water' ? '💧 Water' : ann.interpretation === 'tissue' ? '⚖️ Tissue' : '🔄 Mixed'}
-                                        </span>
-                                        <span className={styles.annotationDate}>
-                                            {parseYYYYMMDD(ann.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {parseYYYYMMDD(ann.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                        </span>
-                                    </div>
-                                    <p className={styles.annotationText}>{ann.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+            </div>
 
+            {/* Weekly Insights - Moved out of grid for better spacing */}
+            {annotations.length > 0 && (
+                <div className={styles.annotationsWrapper}>
+                    <h3 className={styles.annotationsTitle}>Weekly Insights</h3>
+                    <div className={styles.annotationsList}>
+                        {annotations.map((ann) => (
+                            <div key={ann.weekNumber} className={styles.annotationItem}>
+                                <div className={styles.annotationHeader}>
+                                    <span className={`${styles.annotationBadge} ${styles[ann.interpretation]}`}>
+                                        {ann.interpretation === 'water' ? '💧 Water' : ann.interpretation === 'tissue' ? '⚖️ Tissue' : '🔄 Mixed'}
+                                    </span>
+                                    <span className={styles.annotationDate}>
+                                        {parseYYYYMMDD(ann.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {parseYYYYMMDD(ann.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    </span>
+                                </div>
+                                <p className={styles.annotationText}>{ann.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className={styles.chartGrid}>
                 {/* Calories Chart */}
                 <div className={styles.chartContainer}>
                     <h3 className={styles.chartTitle}>Calories Consumed</h3>

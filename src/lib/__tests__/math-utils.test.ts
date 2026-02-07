@@ -4,6 +4,7 @@ import {
     calculateTrendLine,
     calculateAverage,
     calculateExponentialMovingAverage,
+    calculateTargetTrajectory,
     DataPoint,
 } from "../math-utils";
 
@@ -171,6 +172,37 @@ describe("math-utils", () => {
             // After the spike, values should slowly return toward 180
             expect(smoothed[3]).toBeGreaterThan(180);
             expect(smoothed[4]).toBeGreaterThan(180);
+        });
+    });
+
+    describe("calculateTargetTrajectory", () => {
+        it("should return empty array for 0 or negative days", () => {
+            expect(calculateTargetTrajectory(200, -0.5, 0)).toEqual([]);
+            expect(calculateTargetTrajectory(200, -0.5, -5)).toEqual([]);
+        });
+
+        it("should calculate correct trajectory for weight loss", () => {
+            // 200 lbs, losing 0.7 lbs/week = 0.1 lbs/day
+            const result = calculateTargetTrajectory(200, -0.7, 4);
+            expect(result.length).toBe(4);
+            expect(result[0]).toBe(200);
+            expect(result[1]).toBeCloseTo(199.9, 5);
+            expect(result[2]).toBeCloseTo(199.8, 5);
+            expect(result[3]).toBeCloseTo(199.7, 5);
+        });
+
+        it("should calculate correct trajectory for weight gain", () => {
+            // 150 lbs, gaining 0.7 lbs/week = 0.1 lbs/day
+            const result = calculateTargetTrajectory(150, 0.7, 3);
+            expect(result.length).toBe(3);
+            expect(result[0]).toBe(150);
+            expect(result[1]).toBeCloseTo(150.1, 5);
+            expect(result[2]).toBeCloseTo(150.2, 5);
+        });
+
+        it("should handle zero goal (maintenance)", () => {
+            const result = calculateTargetTrajectory(180, 0, 5);
+            expect(result.every((val: number) => val === 180)).toBe(true);
         });
     });
 });

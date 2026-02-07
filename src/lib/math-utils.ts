@@ -116,3 +116,28 @@ export function calculateExponentialMovingAverage(
 
     return result;
 }
+
+/**
+ * Calculates a target weight trajectory based on a starting weight and weekly goal.
+ *
+ * @param startWeight - The weight at day 0
+ * @param weeklyGoal - The target weight change per week (e.g., -1.0 for loss, 0.5 for gain)
+ * @param days - Number of days to calculate for
+ * @returns Array of target weights for each day
+ */
+export function calculateTargetTrajectory(
+    startWeight: number,
+    weeklyGoal: number,
+    days: number
+): number[] {
+    if (days <= 0) return [];
+
+    const dailyRate = weeklyGoal / 7;
+    const trajectory: number[] = [];
+
+    for (let i = 0; i < days; i++) {
+        trajectory.push(startWeight + (dailyRate * i));
+    }
+
+    return trajectory;
+}
