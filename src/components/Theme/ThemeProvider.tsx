@@ -13,10 +13,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>("light"); // Default safe for SSR, updated in effect
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
         // Check local storage first
         const stored = localStorage.getItem("theme") as Theme | null;
         if (stored === "light" || stored === "dark") {

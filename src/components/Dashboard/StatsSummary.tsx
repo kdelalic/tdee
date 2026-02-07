@@ -42,7 +42,7 @@ function calculateStreak(entries: DailyEntry[]): number {
 
     // Count consecutive days starting from the most recent entry
     let streak = 0;
-    let checkDate = new Date(mostRecentDate + 'T12:00:00'); // Use noon to avoid timezone issues
+    const checkDate = new Date(mostRecentDate + 'T12:00:00'); // Use noon to avoid timezone issues
 
     while (true) {
         const dateString = checkDate.toISOString().split('T')[0];

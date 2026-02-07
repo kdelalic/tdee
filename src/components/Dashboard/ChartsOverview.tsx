@@ -16,6 +16,7 @@ import {
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
 import { calculateLinearRegression, calculateTrendLine, calculateExponentialMovingAverage, calculateTargetTrajectory, DataPoint } from "@/lib/math-utils";
+import { calculateFormulaTDEE } from "@/lib/tdee-calculations";
 import { CALORIES_PER_POUND, SETUP_PHASE_DAYS, WEIGHT_EMA_SMOOTHING_FACTOR } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
@@ -346,7 +347,20 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
             // Use the last 14 days window for TDEE calculation
             const windowStart = Math.max(0, index - 13);
             const windowEntries = reversed.slice(windowStart, index + 1);
-            const rollingTDEE = calculateRollingTDEE(windowEntries);
+
+            let rollingTDEE: number | null = null;
+
+            // Check if this specific data point is within the setup phase
+            const daysSinceStart = settings?.startDate ? daysBetween(settings.startDate, entry.date) : 999;
+            const isSetupPhaseForEntry = daysSinceStart >= 0 && daysSinceStart < SETUP_PHASE_DAYS;
+
+            if (isSetupPhaseForEntry && settings) {
+                // Use formula during setup phase to avoid erratic jumps
+                rollingTDEE = calculateFormulaTDEE(settings, entry.weight);
+            } else {
+                // Use adaptive calculation after setup phase
+                rollingTDEE = calculateRollingTDEE(windowEntries);
+            }
 
             return {
                 date: dateObj.toLocaleDateString("en-US", {

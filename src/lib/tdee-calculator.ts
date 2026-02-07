@@ -14,18 +14,6 @@ export interface TDEEStats {
 }
 
 /**
- * Calculates a simple moving average of weight.
- * For a real TDEE sheet, this is usually more complex (exponential smoothing),
- * but strict average of last 7 entries is a good start.
- */
-function calculateAverageWeight(entries: DailyEntry[], days = 7): number {
-    if (entries.length === 0) return 0;
-    const recent = entries.slice(0, days);
-    const sum = recent.reduce((acc, curr) => acc + curr.weight, 0);
-    return sum / recent.length;
-}
-
-/**
  * Calculates the Total Daily Energy Expenditure (TDEE).
  * 
  * Basic Logic:
@@ -63,7 +51,6 @@ export function calculateAdaptiveTDEE(entries: DailyEntry[]): number | null {
     // Let's use average of first 3 days vs average of last 3 days of the period for smoothing?
     // If we have 14 days: Avg(days 0-2) [newest] vs Avg(days 11-13) [oldest]
 
-    let weightDiff = 0;
     const windowSize = Math.max(1, Math.floor(daysToAnalyze / 4)); // e.g., 3 days for 14 day period
 
     const newestWindow = periodEntries.slice(0, windowSize); // Most recent
@@ -127,9 +114,6 @@ export function calculateStats(
     // If I want to lose, my target calories should be TDEE + dailyTargetDiff (which is negative)
     const targetCalories = Math.round(tdee + dailyTargetDiff);
 
-    // Weeks until goal
-    // Remaining amount
-    const remaining = currentWeight - settings.goalWeight;
     // Rate is settings.weeklyGoal (e.g. -1)
     // If remaining is 20 (loss needed) and rate is -1: 20 / -(-1) ? 
     // Logic: We want to bridge the gap.
