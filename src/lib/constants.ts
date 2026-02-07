@@ -15,6 +15,10 @@ export const TDEE_WINDOW_DAYS = 14;
 // Fallback calculation multiplier (sedentary/light activity)
 export const FALLBACK_TDEE_MULTIPLIER = 14;
 
+// TDEE sanity bounds to prevent unrealistic values from noisy data
+export const TDEE_MIN_BOUND = 800;
+export const TDEE_MAX_BOUND = 6000;
+
 // Chart defaults
 export const DEFAULT_TDEE_DOMAIN = {
     min: 1500,

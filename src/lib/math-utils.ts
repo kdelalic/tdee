@@ -107,7 +107,10 @@ export function calculateExponentialMovingAverage(
     if (values.length === 0) return [];
     if (values.length === 1) return [...values];
 
-    const result: number[] = [values[0]]; // First value seeds the EMA
+    // Seed with average of first few values to reduce bias from outlier first measurement
+    const seedCount = Math.min(3, values.length);
+    const seed = values.slice(0, seedCount).reduce((a, b) => a + b, 0) / seedCount;
+    const result: number[] = [seed];
 
     for (let i = 1; i < values.length; i++) {
         const ema = values[i] * smoothingFactor + result[i - 1] * (1 - smoothingFactor);

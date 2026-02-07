@@ -1,6 +1,7 @@
 import { DailyEntry, UserSettings } from "./firebase/firestore";
 import { calculateLinearRegression } from "./math-utils";
-import { CALORIES_PER_POUND, MIN_ENTRIES_FOR_TDEE, ANALYSIS_PERIOD_DAYS, LBS_TO_KG } from "./constants";
+import { daysBetween } from "./date-utils";
+import { CALORIES_PER_POUND, MIN_ENTRIES_FOR_TDEE, ANALYSIS_PERIOD_DAYS, LBS_TO_KG, TDEE_MIN_BOUND, TDEE_MAX_BOUND } from "./constants";
 
 export interface TDEEResult {
     tdee: number;
@@ -32,7 +33,9 @@ export const calculateTDEE = (entries: DailyEntry[]): TDEEResult | null => {
     const avgCals = totalCals / recentEntries.length;
 
     // 2. Weight Trend using centralized linear regression
-    const data = recentEntries.map((e, i) => ({ x: i, y: e.weight }));
+    // Use actual date offsets (not array indices) so gaps between entries are handled correctly
+    const firstDate = recentEntries[0].date;
+    const data = recentEntries.map(e => ({ x: daysBetween(firstDate, e.date), y: e.weight }));
     const regression = calculateLinearRegression(data);
 
     if (!regression) return null;
@@ -41,7 +44,7 @@ export const calculateTDEE = (entries: DailyEntry[]): TDEEResult | null => {
 
     // 3. TDEE Calculation
     const caloricSurplusOrDeficit = slope * CALORIES_PER_POUND;
-    const tdee = avgCals - caloricSurplusOrDeficit;
+    const tdee = Math.max(TDEE_MIN_BOUND, Math.min(TDEE_MAX_BOUND, avgCals - caloricSurplusOrDeficit));
 
     return {
         tdee: Math.round(tdee),
@@ -70,9 +73,3 @@ export function calculateFormulaTDEE(settings: UserSettings, currentWeight?: num
     return Math.round(bmr * settings.activityLevel);
 }
 
-export const getWeightTrend = (entries: DailyEntry[]) => {
-    // Helper to just get the trend for the UI graph
-    if (entries.length < 2) return [];
-    // ... 
-    return entries.map(e => ({ date: e.date, weight: e.weight }));
-}

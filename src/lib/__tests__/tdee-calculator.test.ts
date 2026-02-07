@@ -1,4 +1,4 @@
-import { calculateAdaptiveTDEE, calculateStats } from "../tdee-calculator";
+import { calculateStats } from "../tdee-calculator";
 
 // Mock types
 interface DailyEntry {
@@ -43,34 +43,6 @@ function createEntries(count: number, startWeight: number, dailyChange: number, 
 }
 
 describe("tdee-calculator", () => {
-    describe("calculateAdaptiveTDEE", () => {
-        it("should return null for less than 7 entries", () => {
-            const entries = createEntries(6, 200, 0, 2000);
-            expect(calculateAdaptiveTDEE(entries)).toBeNull();
-        });
-
-        it("should return a number for 7+ entries", () => {
-            const entries = createEntries(10, 200, 0, 2000);
-            const result = calculateAdaptiveTDEE(entries);
-            expect(typeof result).toBe("number");
-        });
-
-        it("should calculate TDEE correctly for maintenance", () => {
-            // Stable weight at 2000 cal = TDEE ~2000
-            const entries = createEntries(14, 185, 0, 2000);
-            const result = calculateAdaptiveTDEE(entries);
-            expect(result).not.toBeNull();
-            expect(result).toBeGreaterThan(1800);
-            expect(result).toBeLessThan(2200);
-        });
-
-        it("should handle 14+ days of data correctly", () => {
-            const entries = createEntries(21, 200, -0.05, 1900);
-            const result = calculateAdaptiveTDEE(entries);
-            expect(result).not.toBeNull();
-        });
-    });
-
     describe("calculateStats", () => {
         const baseSettings: UserSettings = {
             goal: "cut",
@@ -150,6 +122,19 @@ describe("tdee-calculator", () => {
             };
             const result = calculateStats(entries, settings);
             // Already at goal weight
+            expect(result.weeksToGoal).toBe(0);
+        });
+
+        it("should return 0 weeks when user has passed their goal", () => {
+            const entries = createEntries(10, 175, 0, 2000);
+            const settings: UserSettings = {
+                ...baseSettings,
+                startingWeight: 190,
+                goalWeight: 180,
+                weeklyGoal: -1,
+            };
+            const result = calculateStats(entries, settings);
+            // Current 175 < goal 180, already passed goal
             expect(result.weeksToGoal).toBe(0);
         });
     });

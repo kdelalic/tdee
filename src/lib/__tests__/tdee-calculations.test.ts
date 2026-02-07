@@ -101,6 +101,42 @@ describe("tdee-calculations", () => {
             expect(result).not.toBeNull();
             expect(result!.weightTrend).toBeCloseTo(-0.7, 1);
         });
+
+        it("should handle entries with date gaps correctly", () => {
+            // Create entries with a gap: days 1-3 then skip to days 10-14
+            // Weight drops 0.1 lb/day = 1 lb over 10 days
+            const entries: DailyEntry[] = [];
+            const startDate = new Date("2024-01-01");
+
+            // Days 0-2: weight 200, 199.9, 199.8
+            for (let i = 0; i < 3; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                entries.push({
+                    userId: "test-user",
+                    date: date.toISOString().split("T")[0],
+                    weight: 200 - 0.1 * i,
+                    calories: 1800,
+                });
+            }
+            // Days 9-13: weight 199.1, 199.0, 198.9, 198.8, 198.7
+            for (let i = 9; i < 14; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                entries.push({
+                    userId: "test-user",
+                    date: date.toISOString().split("T")[0],
+                    weight: 200 - 0.1 * i,
+                    calories: 1800,
+                });
+            }
+
+            const result = calculateTDEE(entries);
+            expect(result).not.toBeNull();
+            // 0.1 lb/day loss = 350 cal/day deficit, TDEE = 1800 + 350 = 2150
+            expect(result!.tdee).toBeCloseTo(2150, -2);
+            expect(result!.weightTrend).toBeCloseTo(-0.7, 1);
+        });
     });
 
     describe("calculateFormulaTDEE", () => {

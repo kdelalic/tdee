@@ -132,8 +132,8 @@ describe("math-utils", () => {
             const smoothed = calculateExponentialMovingAverage(weights, 0.1);
 
             expect(smoothed.length).toBe(7);
-            // First value is unchanged
-            expect(smoothed[0]).toBe(185);
+            // First value is seeded with average of first 3 values: (185 + 186.5 + 184) / 3 = 185.167
+            expect(smoothed[0]).toBeCloseTo(185.167, 1);
             // All smoothed values should be close to the average (~185)
             smoothed.forEach((val) => {
                 expect(val).toBeGreaterThan(184);
@@ -147,19 +147,25 @@ describe("math-utils", () => {
             const smoothed = calculateExponentialMovingAverage(weights, 0.1);
 
             expect(smoothed.length).toBe(7);
-            // EMA should follow the downward trend (each value less than previous)
+            // Seed = avg(200, 199.5, 199) = 199.5
+            expect(smoothed[0]).toBeCloseTo(199.5, 1);
+            // EMA should follow the downward trend (each value less than or equal to previous)
             for (let i = 1; i < smoothed.length; i++) {
-                expect(smoothed[i]).toBeLessThan(smoothed[i - 1]);
+                expect(smoothed[i]).toBeLessThanOrEqual(smoothed[i - 1]);
             }
+            // Later values should clearly be lower
+            expect(smoothed[6]).toBeLessThan(smoothed[0]);
             // But EMA lags behind actual values
             expect(smoothed[6]).toBeGreaterThan(weights[6]);
         });
 
         it("should use custom smoothing factor", () => {
             const weights = [100, 110];
-            // With 0.5 factor, second value = 110 * 0.5 + 100 * 0.5 = 105
+            // With 2 values, seed = avg(100, 110) = 105
+            // Second value = 110 * 0.5 + 105 * 0.5 = 107.5
             const smoothed = calculateExponentialMovingAverage(weights, 0.5);
-            expect(smoothed[1]).toBe(105);
+            expect(smoothed[0]).toBe(105);
+            expect(smoothed[1]).toBe(107.5);
         });
 
         it("should dampen spikes", () => {
@@ -167,11 +173,13 @@ describe("math-utils", () => {
             const weights = [180, 180, 185, 180, 180]; // spike at index 2
             const smoothed = calculateExponentialMovingAverage(weights, 0.1);
 
-            // The spike should be dampened significantly
-            expect(smoothed[2]).toBeLessThan(181); // Much less than 185
+            // Seed = avg(180, 180, 185) = 181.667
+            expect(smoothed[0]).toBeCloseTo(181.667, 1);
+            // The spike at index 2 should be dampened significantly
+            expect(smoothed[2]).toBeLessThan(182); // Much less than 185
             // After the spike, values should slowly return toward 180
-            expect(smoothed[3]).toBeGreaterThan(180);
-            expect(smoothed[4]).toBeGreaterThan(180);
+            expect(smoothed[3]).toBeLessThan(smoothed[2]);
+            expect(smoothed[4]).toBeLessThan(smoothed[3]);
         });
     });
 

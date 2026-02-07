@@ -17,7 +17,7 @@ import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
 import { calculateLinearRegression, calculateTrendLine, calculateExponentialMovingAverage, calculateTargetTrajectory, DataPoint } from "@/lib/math-utils";
 import { calculateFormulaTDEE } from "@/lib/tdee-calculations";
-import { CALORIES_PER_POUND, SETUP_PHASE_DAYS, WEIGHT_EMA_SMOOTHING_FACTOR } from "@/lib/constants";
+import { CALORIES_PER_POUND, SETUP_PHASE_DAYS, WEIGHT_EMA_SMOOTHING_FACTOR, TDEE_MIN_BOUND, TDEE_MAX_BOUND } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
 // Tooltip types and component extracted outside for performance
@@ -207,26 +207,24 @@ interface ChartsOverviewProps {
     settings: UserSettings | null;
 }
 
-// Helper function to calculate TDEE for a given window of entries
+// Helper function to calculate TDEE for a given window of entries.
+// Expects entries sorted ascending by date (oldest to newest).
 function calculateRollingTDEE(windowEntries: DailyEntry[]): number | null {
     if (windowEntries.length < 7) return null;
 
-    // Sort by date ascending
-    const sorted = [...windowEntries].sort((a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
     // Average Calories
-    const avgCals = sorted.reduce((sum, e) => sum + e.calories, 0) / sorted.length;
+    const avgCals = windowEntries.reduce((sum, e) => sum + e.calories, 0) / windowEntries.length;
 
     // Weight Trend using centralized linear regression
-    const data: DataPoint[] = sorted.map((e, i) => ({ x: i, y: e.weight }));
+    // Use actual date offsets (not array indices) so gaps between entries are handled correctly
+    const firstDate = windowEntries[0].date;
+    const data: DataPoint[] = windowEntries.map(e => ({ x: daysBetween(firstDate, e.date), y: e.weight }));
     const regression = calculateLinearRegression(data);
 
     if (!regression) return null;
 
     // TDEE = avgCals - (slope * CALORIES_PER_POUND)
-    const tdee = avgCals - (regression.slope * CALORIES_PER_POUND);
+    const tdee = Math.max(TDEE_MIN_BOUND, Math.min(TDEE_MAX_BOUND, avgCals - (regression.slope * CALORIES_PER_POUND)));
 
     return Math.round(tdee);
 }
@@ -253,13 +251,15 @@ function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | nul
         };
     }
 
-    const earliest = sortedEntries[0];
-    const latest = sortedEntries[sortedEntries.length - 1];
+    // Use linear regression slope instead of raw first/last values for outlier resistance
+    const firstDate = sortedEntries[0].date;
+    const weightPoints = sortedEntries.map(e => ({
+        x: daysBetween(firstDate, e.date),
+        y: e.weight
+    }));
+    const regression = calculateLinearRegression(weightPoints);
 
-    const daysDiff = daysBetween(earliest.date, latest.date);
-
-    // Safety check for zero days diff
-    if (daysDiff <= 0) {
+    if (!regression) {
         return {
             actualRate: null,
             targetRate: settings.weeklyGoal,
@@ -267,8 +267,7 @@ function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | nul
         };
     }
 
-    const weightChange = latest.weight - earliest.weight;
-    const actualRate = (weightChange / daysDiff) * 7;
+    const actualRate = regression.slope * 7; // lbs per week
 
     return {
         actualRate: Math.round(actualRate * 100) / 100,
@@ -294,24 +293,27 @@ function calculateWeeklyAnnotations(
 ): WeeklyAnnotation[] {
     if (!startDate || data.length < 7) return [];
 
+    // Group entries by actual calendar week (using days since start date)
+    const weekMap = new Map<number, Array<{ fullDate: string; weight: number; smoothedWeight: number }>>();
+    for (const entry of data) {
+        const daysSince = daysBetween(startDate, entry.fullDate);
+        if (daysSince < 0) continue;
+        const weekNum = Math.floor(daysSince / 7) + 1;
+        if (!weekMap.has(weekNum)) weekMap.set(weekNum, []);
+        weekMap.get(weekNum)!.push(entry);
+    }
+
     const annotations: WeeklyAnnotation[] = [];
-    const DAYS_PER_WEEK = 7;
 
-    // Group data by weeks
+    for (const [weekNumber, weekEntries] of weekMap) {
+        // Need at least 4 entries to evaluate a week
+        if (weekEntries.length < 4) continue;
 
-    for (let weekStart = 0; weekStart < data.length; weekStart += DAYS_PER_WEEK) {
-        const weekEnd = Math.min(weekStart + DAYS_PER_WEEK - 1, data.length - 1);
-
-        // Need at least 4 days to evaluate a week
-        if (weekEnd - weekStart < 3) continue;
-
-        const startEntry = data[weekStart];
-        const endEntry = data[weekEnd];
+        const startEntry = weekEntries[0];
+        const endEntry = weekEntries[weekEntries.length - 1];
 
         const rawChange = endEntry.weight - startEntry.weight;
         const smoothedChange = endEntry.smoothedWeight - startEntry.smoothedWeight;
-
-        const weekNumber = Math.floor(weekStart / DAYS_PER_WEEK) + 1;
 
         // Determine interpretation based on week number and difference between raw and smoothed
         const noiseMagnitude = Math.abs(rawChange - smoothedChange);
@@ -357,8 +359,10 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
         const reversed = [...entries].reverse();
 
         // Calculate trends on the sorted data
-        const weightPoints = reversed.map((e, i) => ({ x: i, y: e.weight }));
-        const caloriePoints = reversed.map((e, i) => ({ x: i, y: e.calories }));
+        // Use actual date offsets so gaps between entries are handled correctly
+        const firstDate = reversed.length > 0 ? reversed[0].date : "";
+        const weightPoints = reversed.map(e => ({ x: daysBetween(firstDate, e.date), y: e.weight }));
+        const caloriePoints = reversed.map(e => ({ x: daysBetween(firstDate, e.date), y: e.calories }));
 
         const weightTrends = calculateTrendLine(weightPoints);
         const calorieTrends = calculateTrendLine(caloriePoints);
