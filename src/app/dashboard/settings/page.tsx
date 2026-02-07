@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { getUserSettings, UserSettings } from "@/lib/firebase/firestore";
@@ -25,7 +25,7 @@ export default function SettingsPage() {
     }, [user, loading, router]);
 
     // Data fetching
-    const fetchSettings = async () => {
+    const fetchSettings = useCallback(async () => {
         if (!user) return;
         try {
             const settings = await getUserSettings(user.uid);
@@ -35,13 +35,13 @@ export default function SettingsPage() {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         if (user) {
             fetchSettings();
         }
-    }, [user]);
+    }, [user, fetchSettings]);
 
     const handleSave = () => {
         router.push("/dashboard");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { getEntries, DailyEntry, deleteDailyEntry, getUserSettings, UserSettings } from "@/lib/firebase/firestore";
@@ -36,7 +36,7 @@ export default function DashboardPage() {
     }, [user, loading, router]);
 
     // Data fetching
-    const refreshData = async () => {
+    const refreshData = useCallback(async () => {
         if (!user) return;
         try {
             const [data, settings] = await Promise.all([
@@ -55,13 +55,13 @@ export default function DashboardPage() {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [user, router]);
 
     useEffect(() => {
         if (user) {
             refreshData();
         }
-    }, [user]);
+    }, [user, refreshData]);
 
     const handleDeleteEntry = (entryId: string) => {
         setDeletingEntryId(entryId);

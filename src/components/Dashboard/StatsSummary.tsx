@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
-import { calculateStats, TDEEStats } from "@/lib/tdee-calculator";
+import { calculateStats } from "@/lib/tdee-calculator";
 import { isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
 import { SETUP_PHASE_DAYS } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
@@ -60,15 +60,13 @@ function calculateStreak(entries: DailyEntry[]): number {
 import StatsSkeleton from "./StatsSkeleton";
 
 export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
-    const [stats, setStats] = useState<TDEEStats | null>(null);
-
     const streak = useMemo(() => calculateStreak(entries), [entries]);
 
-    useEffect(() => {
+    const stats = useMemo(() => {
         if (entries && settings) {
-            const calculated = calculateStats(entries, settings);
-            setStats(calculated);
+            return calculateStats(entries, settings);
         }
+        return null;
     }, [entries, settings]);
 
     if (!settings) return null;
@@ -89,7 +87,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                 </div>
 
                 <div className={styles.statRow}>
-                    <span className={styles.statLabel}>You've {stats.totalLost >= 0 ? "Lost" : "Gained"}:</span>
+                    <span className={styles.statLabel}>You&apos;ve {stats.totalLost >= 0 ? "Lost" : "Gained"}:</span>
                     <span className={`${styles.statValue} ${(isLossGoal && stats.totalLost >= 0) || (!isLossGoal && stats.totalLost <= 0)
                         ? styles.textSuccess
                         : styles.textError

@@ -11,7 +11,6 @@ import {
     ResponsiveContainer,
     AreaChart,
     Area,
-    ReferenceLine,
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
@@ -263,7 +262,6 @@ function calculateWeeklyAnnotations(
     const DAYS_PER_WEEK = 7;
 
     // Group data by weeks
-    const startDateObj = parseYYYYMMDD(startDate);
 
     for (let weekStart = 0; weekStart < data.length; weekStart += DAYS_PER_WEEK) {
         const weekEnd = Math.min(weekStart + DAYS_PER_WEEK - 1, data.length - 1);
@@ -440,19 +438,17 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
             tdeeDomain: tdeeDom,
             tdeeValues: tdeeVals,
         };
-    }, [entries, data, settings?.goalWeight]);
+    }, [entries, data]);
 
     // Memoize isOnTrack calculation
-    const isOnTrack = useMemo(() => {
+    const isOnTrack = (() => {
         if (weeklyRate?.actualRate == null || settings?.weeklyGoal == null) return null;
         return Math.sign(weeklyRate.actualRate) === Math.sign(settings.weeklyGoal) &&
             Math.abs(weeklyRate.actualRate) <= Math.abs(settings.weeklyGoal) * 1.5;
-    }, [weeklyRate?.actualRate, settings?.weeklyGoal]);
+    })();
 
     // Check if user is in setup phase (first 2 weeks - glycogen refill period)
-    const inSetupPhase = useMemo(() => {
-        return isInSetupPhase(settings?.startDate, SETUP_PHASE_DAYS);
-    }, [settings?.startDate]);
+    const inSetupPhase = isInSetupPhase(settings?.startDate, SETUP_PHASE_DAYS);
 
     const currentDayNumber = useMemo(() => {
         return daysSinceStart(settings?.startDate);

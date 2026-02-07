@@ -19,7 +19,7 @@ export default function AboutPage() {
                     <h2 className={styles.sectionTitle}>👋 The Mission</h2>
                     <p className={styles.text}>
                         TDEE Tracker was built to solve a common problem in fitness: static calculators are often wrong.
-                        Most calorie calculators use generic formulas that don't account for your unique metabolism,
+                        Most calorie calculators use generic formulas that don&apos;t account for your unique metabolism,
                         activity level, or hormonal fluctuations.
                     </p>
                     <p className={styles.text}>
