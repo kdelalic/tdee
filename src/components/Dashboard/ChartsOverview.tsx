@@ -502,9 +502,9 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
     }
 
     // Colors (static, no need to memoize)
-    const COLOR_WEIGHT = "var(--primary)";
-    const COLOR_CALORIES = "#8b5cf6"; // Violet 500
-    const COLOR_TDEE = "#10b981"; // Emerald 500
+    const COLOR_WEIGHT = "#3b82f6"; // Vibrant Blue
+    const COLOR_CALORIES = "#8b5cf6"; // Purple
+    const COLOR_TDEE = "#10b981"; // Green/Teal
 
     return (
         <div className={styles.card}>
@@ -556,7 +556,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                         <div className={styles.rateItem}>
                             <span className={styles.rateLabel}>Target</span>
                             <div className={styles.rateValueContainer}>
-                                <span className={styles.rateValue} style={{ color: 'var(--primary)' }}>
+                                <span className={styles.rateValue} style={{ color: 'var(--accent-purple)' }}>
                                     {weeklyRate.targetRate > 0 ? '+' : ''}{weeklyRate.targetRate.toFixed(2)}
                                 </span>
                                 <span className={styles.rateUnit}>
@@ -568,7 +568,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                         <div style={{ flex: 1, minWidth: '140px', display: 'flex', alignItems: 'center' }}>
                             {weeklyRate.actualRate !== null && !inSetupPhase && (
                                 <span className={styles.rateStatusBadge} style={{
-                                    background: isOnTrack ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                    background: isOnTrack ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                                     color: isOnTrack ? 'var(--success)' : 'var(--warning, #f59e0b)'
                                 }}>
                                     {isOnTrack ? '✓ On Track' : '⚠ Adjust Pace'}
@@ -592,8 +592,9 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                     <stop offset="95%" stopColor={COLOR_WEIGHT} stopOpacity={0.05} />
                                 </linearGradient>
                                 <linearGradient id="colorSmoothed" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                                    {/* Using bright blue gradient for the area */}
+                                    <stop offset="5%" stopColor={COLOR_WEIGHT} stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor={COLOR_WEIGHT} stopOpacity={0.05} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -621,9 +622,9 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                     type="monotone"
                                     dataKey="targetWeight"
                                     name="Target Trajectory"
-                                    stroke="var(--primary)"
-                                    strokeWidth={2.5} /* Made thicker */
-                                    strokeDasharray="5 5"
+                                    stroke="#60a5fa" /* Lighter Blue */
+                                    strokeWidth={2.5}
+                                    strokeDasharray="5 5" /* Dashed */
                                     dot={false}
                                     activeDot={false}
                                     strokeOpacity={0.8}
@@ -634,10 +635,10 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 type="monotone"
                                 dataKey="smoothedWeight"
                                 name="Trend"
-                                stroke="#10b981"
+                                stroke={COLOR_WEIGHT} /* Bright Blue */
                                 fillOpacity={1}
                                 fill="url(#colorSmoothed)"
-                                strokeWidth={3} /* Made thicker */
+                                strokeWidth={3}
                             />
                             {/* Daily weight line (shows fluctuations/noise) */}
                             <Line
@@ -645,10 +646,10 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 dataKey="weight"
                                 name="Daily Weight"
                                 stroke={COLOR_WEIGHT}
-                                strokeWidth={2} /* Made slightly thicker */
-                                dot={{ r: 3, fill: COLOR_WEIGHT }} /* Added small dots for better definition */
+                                strokeWidth={2}
+                                dot={{ r: 3, fill: COLOR_WEIGHT }}
                                 activeDot={{ r: 6, fill: COLOR_WEIGHT, strokeWidth: 0 }}
-                                strokeOpacity={0.6}
+                                strokeOpacity={0.4} /* Reduced opacity to let Trend pop */
                             />
                             {/* Linear trend for reference - Hidden from Legend usually, or keep minimal */}
                             {/* Removed Linear Trend from visual chart to reduce clutter, or keep very subtle if interpreted */}

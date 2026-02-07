@@ -459,23 +459,23 @@
     padding: 0 2rem;
     height: 50px;
     width: 100%;
-    background-color: var(--primary);
+    background: var(--gradient-primary); /* Gradient background */
     color: white;
     border-radius: var(--radius-lg);
     font-weight: 600;
     font-size: 0.9375rem;
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); /* Colorful shadow */
     display: flex;
     align-items: center;
     justify-content: center;
     white-space: nowrap;
+    border: none;
 }
 
 .primaryButton:hover:not(:disabled) {
-    background-color: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); /* Glow effect */
 }
 
 .primaryButton:active:not(:disabled) {
@@ -486,6 +486,8 @@
     opacity: 0.6;
     cursor: not-allowed;
     filter: grayscale(0.5);
+    background: var(--text-tertiary); /* Fallback */
+    box-shadow: none;
 }
 
 .secondaryButton {
@@ -671,6 +673,14 @@
 .textPrimary { color: var(--primary); }
 .textSuccess { color: var(--success); }
 .textError { color: var(--error); }
+.textPurple { color: var(--accent-purple); }
+.textStreak {
+    background: var(--gradient-fire); 
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
 
 /* Utilities */
 .divider {

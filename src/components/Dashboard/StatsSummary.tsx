@@ -107,7 +107,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                     <span className={styles.statValue}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {streak > 0 ? (
-                                <>🔥 {streak} <small>day{streak !== 1 ? 's' : ''}</small></>
+                                <><span className={styles.textStreak}>🔥</span> {streak} <small>day{streak !== 1 ? 's' : ''}</small></>
                             ) : (
                                 <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                                     Start your streak today!
@@ -132,7 +132,7 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
 
                         <div className={styles.statRow}>
                             <span className={styles.statLabel}>Target Daily Calories:</span>
-                            <span className={`${styles.statValue} ${styles.textPrimary}`}>
+                            <span className={`${styles.statValue} ${styles.textPurple}`}>
                                 {stats.targetCalories.toLocaleString()} <small>Cal/Day</small>
                             </span>
                         </div>
