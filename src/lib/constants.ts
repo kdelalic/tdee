@@ -28,3 +28,7 @@ export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 // Setup phase duration (water/glycogen refill period)
 // TDEE estimates are unreliable during this initial period
 export const SETUP_PHASE_DAYS = 14;
+
+// Weight smoothing (Hacker's Diet-style EMA)
+// 0.1 = 10% weight to new data, 90% to previous average
+export const WEIGHT_EMA_SMOOTHING_FACTOR = 0.1;

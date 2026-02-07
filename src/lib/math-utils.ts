@@ -88,3 +88,31 @@ export function calculateAverage(values: number[]): number {
     if (values.length === 0) return 0;
     return values.reduce((sum, val) => sum + val, 0) / values.length;
 }
+
+/**
+ * Calculates an exponential moving average (EMA) for a series of values.
+ * Uses the Hacker's Diet-style smoothing algorithm to filter out daily noise
+ * and reveal the underlying weight trend.
+ *
+ * Formula: EMA[n] = (value[n] * smoothingFactor) + (EMA[n-1] * (1 - smoothingFactor))
+ *
+ * @param values - Array of values (e.g., daily weights)
+ * @param smoothingFactor - Weight given to new values (0.1 = 10% new, 90% previous)
+ * @returns Array of smoothed values
+ */
+export function calculateExponentialMovingAverage(
+    values: number[],
+    smoothingFactor: number = 0.1
+): number[] {
+    if (values.length === 0) return [];
+    if (values.length === 1) return [...values];
+
+    const result: number[] = [values[0]]; // First value seeds the EMA
+
+    for (let i = 1; i < values.length; i++) {
+        const ema = values[i] * smoothingFactor + result[i - 1] * (1 - smoothingFactor);
+        result.push(ema);
+    }
+
+    return result;
+}

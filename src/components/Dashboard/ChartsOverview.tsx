@@ -15,8 +15,8 @@ import {
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
-import { calculateLinearRegression, calculateTrendLine, DataPoint } from "@/lib/math-utils";
-import { CALORIES_PER_POUND, SETUP_PHASE_DAYS } from "@/lib/constants";
+import { calculateLinearRegression, calculateTrendLine, calculateExponentialMovingAverage, DataPoint } from "@/lib/math-utils";
+import { CALORIES_PER_POUND, SETUP_PHASE_DAYS, WEIGHT_EMA_SMOOTHING_FACTOR } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
 // Tooltip types and component extracted outside for performance
@@ -236,6 +236,81 @@ function calculateWeeklyRate(entries: DailyEntry[], settings: UserSettings | nul
     };
 }
 
+// Weekly annotation types for tissue vs water interpretation
+interface WeeklyAnnotation {
+    weekNumber: number;
+    startDate: string;
+    endDate: string;
+    rawChange: number;       // Actual daily weight change
+    smoothedChange: number;  // EMA-smoothed change (more accurate)
+    interpretation: 'water' | 'tissue' | 'mixed';
+    description: string;
+}
+
+function calculateWeeklyAnnotations(
+    data: Array<{ fullDate: string; weight: number; smoothedWeight: number }>,
+    startDate: string | undefined
+): WeeklyAnnotation[] {
+    if (!startDate || data.length < 7) return [];
+
+    const annotations: WeeklyAnnotation[] = [];
+    const DAYS_PER_WEEK = 7;
+
+    // Group data by weeks
+    const startDateObj = parseYYYYMMDD(startDate);
+
+    for (let weekStart = 0; weekStart < data.length; weekStart += DAYS_PER_WEEK) {
+        const weekEnd = Math.min(weekStart + DAYS_PER_WEEK - 1, data.length - 1);
+
+        // Need at least 4 days to evaluate a week
+        if (weekEnd - weekStart < 3) continue;
+
+        const startEntry = data[weekStart];
+        const endEntry = data[weekEnd];
+
+        const rawChange = endEntry.weight - startEntry.weight;
+        const smoothedChange = endEntry.smoothedWeight - startEntry.smoothedWeight;
+
+        const weekNumber = Math.floor(weekStart / DAYS_PER_WEEK) + 1;
+
+        // Determine interpretation based on week number and difference between raw and smoothed
+        const noiseMagnitude = Math.abs(rawChange - smoothedChange);
+        let interpretation: 'water' | 'tissue' | 'mixed';
+        let description: string;
+
+        // Early weeks (1-2): mostly water/glycogen
+        if (weekNumber <= 2) {
+            interpretation = 'water';
+            const changeStr = rawChange >= 0 ? `+${rawChange.toFixed(1)}` : rawChange.toFixed(1);
+            description = `Week ${weekNumber}: ${changeStr} lbs (mostly water/glycogen)`;
+        }
+        // Later weeks with high noise: mixed
+        else if (noiseMagnitude > 0.5) {
+            interpretation = 'mixed';
+            const changeStr = smoothedChange >= 0 ? `+${smoothedChange.toFixed(1)}` : smoothedChange.toFixed(1);
+            description = `Week ${weekNumber}: ${changeStr} lbs trend (noisy data)`;
+        }
+        // Later weeks with stable data: likely tissue
+        else {
+            interpretation = 'tissue';
+            const changeStr = smoothedChange >= 0 ? `+${smoothedChange.toFixed(1)}` : smoothedChange.toFixed(1);
+            description = `Week ${weekNumber}: ${changeStr} lbs (tissue change)`;
+        }
+
+        annotations.push({
+            weekNumber,
+            startDate: startEntry.fullDate,
+            endDate: endEntry.fullDate,
+            rawChange,
+            smoothedChange,
+            interpretation,
+            description,
+        });
+    }
+
+    return annotations;
+}
+
 export default function ChartsOverview({ entries, settings }: ChartsOverviewProps) {
     const data = useMemo(() => {
         // Clone and reverse to show oldest to newest
@@ -247,6 +322,10 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
 
         const weightTrends = calculateTrendLine(weightPoints);
         const calorieTrends = calculateTrendLine(caloriePoints);
+
+        // Calculate EMA-smoothed weight (Hacker's Diet style)
+        const weights = reversed.map(e => e.weight);
+        const smoothedWeights = calculateExponentialMovingAverage(weights, WEIGHT_EMA_SMOOTHING_FACTOR);
 
         return reversed.map((entry, index) => {
             const dateObj = parseYYYYMMDD(entry.date);
@@ -266,11 +345,16 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                 weight: entry.weight,
                 calories: entry.calories,
                 weightTrend: weightTrends[index],
+                smoothedWeight: smoothedWeights[index],
                 caloriesTrend: calorieTrends[index],
                 tdee: rollingTDEE,
             };
         });
     }, [entries]);
+
+    const annotations = useMemo(() => {
+        return calculateWeeklyAnnotations(data, settings?.startDate);
+    }, [data, settings?.startDate]);
 
     const weeklyRate = useMemo(() => calculateWeeklyRate(entries, settings), [entries, settings]);
 
@@ -420,8 +504,12 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                         <AreaChart data={data}>
                             <defs>
                                 <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={COLOR_WEIGHT} stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor={COLOR_WEIGHT} stopOpacity={0} />
+                                    <stop offset="5%" stopColor={COLOR_WEIGHT} stopOpacity={0.15} />
+                                    <stop offset="95%" stopColor={COLOR_WEIGHT} stopOpacity={0.05} />
+                                </linearGradient>
+                                <linearGradient id="colorSmoothed" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -440,22 +528,35 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 width={30}
                             />
                             <Tooltip content={<CustomTooltip />} />
+                            {/* Smoothed trend area (shows the "true" trend) */}
                             <Area
                                 type="monotone"
-                                dataKey="weight"
-                                name="Weight"
-                                stroke={COLOR_WEIGHT}
+                                dataKey="smoothedWeight"
+                                name="Trend"
+                                stroke="#10b981"
                                 fillOpacity={1}
-                                fill="url(#colorWeight)"
-                                strokeWidth={2}
+                                fill="url(#colorSmoothed)"
+                                strokeWidth={2.5}
                             />
+                            {/* Daily weight line (shows fluctuations/noise) */}
+                            <Line
+                                type="monotone"
+                                dataKey="weight"
+                                name="Daily Weight"
+                                stroke={COLOR_WEIGHT}
+                                strokeWidth={1.5}
+                                dot={false}
+                                activeDot={{ r: 5, fill: COLOR_WEIGHT }}
+                                strokeOpacity={0.7}
+                            />
+                            {/* Linear trend for reference */}
                             <Line
                                 type="linear"
                                 dataKey="weightTrend"
-                                name="Trend"
-                                stroke="var(--text-secondary)"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
+                                name="Linear Trend"
+                                stroke="var(--text-tertiary)"
+                                strokeWidth={1}
+                                strokeDasharray="4 4"
                                 dot={false}
                                 activeDot={false}
                             />
@@ -465,6 +566,28 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
+
+                {/* Weekly Insights */}
+                {annotations.length > 0 && (
+                    <div className={styles.annotationsContainer}>
+                        <h3 className={styles.annotationsTitle}>Weekly Insights</h3>
+                        <div className={styles.annotationsList}>
+                            {annotations.map((ann) => (
+                                <div key={ann.weekNumber} className={styles.annotationItem}>
+                                    <div className={styles.annotationHeader}>
+                                        <span className={`${styles.annotationBadge} ${styles[ann.interpretation]}`}>
+                                            {ann.interpretation === 'water' ? '💧 Water' : ann.interpretation === 'tissue' ? '⚖️ Tissue' : '🔄 Mixed'}
+                                        </span>
+                                        <span className={styles.annotationDate}>
+                                            {parseYYYYMMDD(ann.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {parseYYYYMMDD(ann.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <p className={styles.annotationText}>{ann.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Calories Chart */}
                 <div className={styles.chartContainer}>

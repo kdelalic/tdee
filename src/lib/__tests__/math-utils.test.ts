@@ -3,6 +3,7 @@ import {
     calculateSlope,
     calculateTrendLine,
     calculateAverage,
+    calculateExponentialMovingAverage,
     DataPoint,
 } from "../math-utils";
 
@@ -114,4 +115,63 @@ describe("math-utils", () => {
             expect(calculateAverage([42])).toBe(42);
         });
     });
+
+    describe("calculateExponentialMovingAverage", () => {
+        it("should return empty array for empty input", () => {
+            expect(calculateExponentialMovingAverage([])).toEqual([]);
+        });
+
+        it("should return same value for single element", () => {
+            expect(calculateExponentialMovingAverage([185])).toEqual([185]);
+        });
+
+        it("should smooth out weight fluctuations", () => {
+            // Simulating daily weight with water fluctuations around 185
+            const weights = [185, 186.5, 184, 185.5, 187, 184.5, 185];
+            const smoothed = calculateExponentialMovingAverage(weights, 0.1);
+
+            expect(smoothed.length).toBe(7);
+            // First value is unchanged
+            expect(smoothed[0]).toBe(185);
+            // All smoothed values should be close to the average (~185)
+            smoothed.forEach((val) => {
+                expect(val).toBeGreaterThan(184);
+                expect(val).toBeLessThan(186);
+            });
+        });
+
+        it("should track a consistent downward trend", () => {
+            // Consistent weight loss: 0.5 lbs/day
+            const weights = [200, 199.5, 199, 198.5, 198, 197.5, 197];
+            const smoothed = calculateExponentialMovingAverage(weights, 0.1);
+
+            expect(smoothed.length).toBe(7);
+            // EMA should follow the downward trend (each value less than previous)
+            for (let i = 1; i < smoothed.length; i++) {
+                expect(smoothed[i]).toBeLessThan(smoothed[i - 1]);
+            }
+            // But EMA lags behind actual values
+            expect(smoothed[6]).toBeGreaterThan(weights[6]);
+        });
+
+        it("should use custom smoothing factor", () => {
+            const weights = [100, 110];
+            // With 0.5 factor, second value = 110 * 0.5 + 100 * 0.5 = 105
+            const smoothed = calculateExponentialMovingAverage(weights, 0.5);
+            expect(smoothed[1]).toBe(105);
+        });
+
+        it("should dampen spikes", () => {
+            // Normal weight with one spike (e.g., water retention)
+            const weights = [180, 180, 185, 180, 180]; // spike at index 2
+            const smoothed = calculateExponentialMovingAverage(weights, 0.1);
+
+            // The spike should be dampened significantly
+            expect(smoothed[2]).toBeLessThan(181); // Much less than 185
+            // After the spike, values should slowly return toward 180
+            expect(smoothed[3]).toBeGreaterThan(180);
+            expect(smoothed[4]).toBeGreaterThan(180);
+        });
+    });
 });
+
