@@ -89,19 +89,19 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
             return;
         }
 
-        if (startW <= 0) {
+        if (isNaN(startW) || startW <= 0) {
             setError("Starting weight must be positive");
             setLoading(false);
             return;
         }
 
         if (goalType !== 'maintain') {
-            if (goalW <= 0) {
+            if (isNaN(goalW) || goalW <= 0) {
                 setError("Goal weight must be positive");
                 setLoading(false);
                 return;
             }
-            if (rate <= 0) {
+            if (isNaN(rate) || rate <= 0) {
                 setError("Target rate must be positive");
                 setLoading(false);
                 return;
@@ -171,12 +171,12 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
         const goalW = parseFloat(goalWeight);
         const rate = parseFloat(weeklyGoalRate);
 
-        if (isNaN(startW) || startW <= 0) return "Starting weight must be positive";
+        if (startingWeight && (isNaN(startW) || startW <= 0)) return "Starting weight must be positive";
         if (!startDate) return null; // Date is required but browser handles it, or strictly: "Start date is required"
 
         if (goalType !== 'maintain') {
-            if (isNaN(goalW) || goalW <= 0) return "Goal weight must be positive";
-            if (isNaN(rate) || rate <= 0) return "Target rate must be positive";
+            if (goalWeight && (isNaN(goalW) || goalW <= 0)) return "Goal weight must be positive";
+            if (weeklyGoalRate && (isNaN(rate) || rate <= 0)) return "Target rate must be positive";
 
             if (goalType === 'cut' && goalW >= startW) return "For cutting, goal weight must be less than current weight";
             if (goalType === 'bulk' && goalW <= startW) return "For bulking, goal weight must be greater than current weight";
