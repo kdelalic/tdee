@@ -17,13 +17,16 @@ import {
 
 export interface UserSettings {
     goal: 'cut' | 'bulk' | 'maintain';
-    activityLevel?: number; // Optional text description or multiplier
-    // New Fields
     units: 'lb' | 'kg';
     startDate: string; // YYYY-MM-DD
     startingWeight: number;
     goalWeight: number;
     weeklyGoal: number; // e.g. -1.0 for lose 1lb/week
+    // Body stats for Mifflin-St Jeor formula TDEE
+    sex?: 'male' | 'female';
+    age?: number;
+    heightCm?: number; // always stored in cm
+    activityLevel?: number; // multiplier: 1.2 | 1.375 | 1.55 | 1.725 | 1.9
 }
 
 export interface DailyEntry {

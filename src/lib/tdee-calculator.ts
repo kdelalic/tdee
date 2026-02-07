@@ -1,4 +1,7 @@
 import { DailyEntry, UserSettings } from "./firebase/firestore";
+import { calculateFormulaTDEE } from "./tdee-calculations";
+import { isInSetupPhase } from "./date-utils";
+import { SETUP_PHASE_DAYS, FALLBACK_TDEE_MULTIPLIER } from "./constants";
 
 export interface TDEEStats {
     currentWeight: number;
@@ -104,12 +107,12 @@ export function calculateStats(
     const totalLost = settings.startingWeight - currentWeight;
 
     // Calculate TDEE
-    // If not enough data, maybe fall back to a standard multiplier of weight?
-    // For now, let's default to a rough estimate if calc fails: Weight * 14 (sedentary/light)
+    // During setup phase, use Mifflin-St Jeor formula since adaptive data is unreliable
+    // (water weight / glycogen fluctuations skew the adaptive calculation)
     let tdee = calculateAdaptiveTDEE(sorted);
-    if (tdee === null) {
-        // Fallback: This is very rough, but better than 0
-        tdee = Math.round(currentWeight * 14);
+    if (tdee === null || isInSetupPhase(settings.startDate, SETUP_PHASE_DAYS)) {
+        const formulaTdee = calculateFormulaTDEE(settings, currentWeight);
+        tdee = formulaTdee ?? Math.round(currentWeight * FALLBACK_TDEE_MULTIPLIER);
     }
 
     // Target Calculations

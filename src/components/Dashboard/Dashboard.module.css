@@ -836,6 +836,34 @@
     max-width: 200px;
 }
 
+.sexToggleContainer {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    background: var(--surface-hover);
+    padding: 0.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+}
+
+.heightInputGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.heightInputGroup .input {
+    flex: 1;
+    min-width: 0;
+}
+
+.heightSeparator {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
 
 /* Mobile Utility Classes */
 .hideOnMobile {

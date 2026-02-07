@@ -112,10 +112,12 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
 
                 <hr className={styles.divider} />
 
-                {entries.length >= 7 ? (
+                {entries.length >= 7 || (settings.sex && settings.age && settings.heightCm && settings.activityLevel) ? (
                     <>
                         <div className={styles.statRow}>
-                            <span className={styles.statLabel}>Current TDEE:</span>
+                            <span className={styles.statLabel}>
+                                {isInSetupPhase(settings.startDate, SETUP_PHASE_DAYS) ? "Estimated TDEE:" : "Current TDEE:"}
+                            </span>
                             <span className={styles.statValue}>
                                 ~{stats.tdee} <small>Cal/Day</small>
                             </span>
@@ -140,7 +142,9 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                             <br />
                             {isInSetupPhase(settings.startDate, SETUP_PHASE_DAYS) ? (
                                 <span className={styles.statAccuracyNote}>
-                                    📊 Day {daysSinceStart(settings.startDate) + 1} of {SETUP_PHASE_DAYS}: Building baseline — estimates stabilize after glycogen levels settle.
+                                    📊 Day {daysSinceStart(settings.startDate) + 1} of {SETUP_PHASE_DAYS}: {settings.sex && settings.age && settings.heightCm && settings.activityLevel
+                                        ? "Using formula-based estimate — adaptive calculation begins after setup phase."
+                                        : "Building baseline — estimates stabilize after glycogen levels settle."}
                                 </span>
                             ) : entries.length < 28 && (
                                 <span className={styles.statAccuracyNote}>

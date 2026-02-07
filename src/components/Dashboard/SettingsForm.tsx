@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UserSettings, updateUserSettings } from "@/lib/firebase/firestore";
 import { useToast } from "@/components/ui/Toast";
+import { ACTIVITY_MULTIPLIERS, CM_PER_INCH, INCHES_PER_FOOT } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
 interface SettingsFormProps {
@@ -22,6 +23,12 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
     const [goalWeight, setGoalWeight] = useState("");
     const [goalType, setGoalType] = useState<GoalType>('cut');
     const [weeklyGoalRate, setWeeklyGoalRate] = useState("");
+    const [sex, setSex] = useState<'male' | 'female'>('male');
+    const [age, setAge] = useState("");
+    const [heightFeet, setHeightFeet] = useState("");
+    const [heightInches, setHeightInches] = useState("");
+    const [heightCm, setHeightCm] = useState("");
+    const [activityLevel, setActivityLevel] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { showToast } = useToast();
@@ -45,6 +52,21 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                 setGoalType('maintain');
                 setWeeklyGoalRate("0");
             }
+
+            // Body stats
+            if (existingSettings.sex) setSex(existingSettings.sex);
+            if (existingSettings.age) setAge(existingSettings.age.toString());
+            if (existingSettings.heightCm) {
+                const savedUnits = existingSettings.units || 'lb';
+                if (savedUnits === 'lb') {
+                    const totalInches = existingSettings.heightCm / CM_PER_INCH;
+                    setHeightFeet(Math.floor(totalInches / INCHES_PER_FOOT).toString());
+                    setHeightInches(Math.round(totalInches % INCHES_PER_FOOT).toString());
+                } else {
+                    setHeightCm(Math.round(existingSettings.heightCm).toString());
+                }
+            }
+            if (existingSettings.activityLevel) setActivityLevel(existingSettings.activityLevel.toString());
         } else {
             // New user: prepopulate date
             const now = new Date();
@@ -106,13 +128,30 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
             finalWeeklyGoal = 0;
         }
 
+        // Convert height to cm for storage
+        let computedHeightCm: number | undefined;
+        if (units === 'lb') {
+            const ft = parseFloat(heightFeet) || 0;
+            const inches = parseFloat(heightInches) || 0;
+            if (ft > 0 || inches > 0) {
+                computedHeightCm = (ft * INCHES_PER_FOOT + inches) * CM_PER_INCH;
+            }
+        } else {
+            const cm = parseFloat(heightCm);
+            if (cm > 0) computedHeightCm = cm;
+        }
+
         const newSettings: Partial<UserSettings> = {
             units,
             startDate,
             startingWeight: startW,
-            goalWeight: goalType === 'maintain' ? startW : goalW, // if maintaining, goal is to stay at start weight (conceptually) or we effectively ignore it
+            goalWeight: goalType === 'maintain' ? startW : goalW,
             weeklyGoal: finalWeeklyGoal,
-            goal: goalType
+            goal: goalType,
+            sex,
+            age: age ? parseInt(age) : undefined,
+            heightCm: computedHeightCm,
+            activityLevel: activityLevel ? parseFloat(activityLevel) : undefined,
         };
 
         try {
@@ -219,7 +258,99 @@ export default function SettingsForm({ userId, existingSettings, onSave, onCance
                         />
                     </div>
 
-                    {/* Row 3 - Full Width Goal Selector */}
+                    {/* Sex Toggle */}
+                    <div className={styles.inputGroup} style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ marginBottom: '0.25rem' }}>Sex</label>
+                        <div className={styles.sexToggleContainer}>
+                            <button
+                                type="button"
+                                onClick={() => setSex('male')}
+                                className={`${styles.toggleButton} ${sex === 'male' ? styles.active : ''}`}
+                            >
+                                Male
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSex('female')}
+                                className={`${styles.toggleButton} ${sex === 'female' ? styles.active : ''}`}
+                            >
+                                Female
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Age & Height */}
+                    <div className={styles.inputGroup}>
+                        <label>Age</label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="120"
+                            value={age}
+                            onChange={e => setAge(e.target.value)}
+                            placeholder="25"
+                            className={styles.input}
+                        />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label>Height {units === 'lb' ? '(ft / in)' : '(cm)'}</label>
+                        {units === 'lb' ? (
+                            <div className={styles.heightInputGroup}>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="8"
+                                    value={heightFeet}
+                                    onChange={e => setHeightFeet(e.target.value)}
+                                    placeholder="5"
+                                    className={styles.input}
+                                />
+                                <span className={styles.heightSeparator}>ft</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="11"
+                                    value={heightInches}
+                                    onChange={e => setHeightInches(e.target.value)}
+                                    placeholder="10"
+                                    className={styles.input}
+                                />
+                                <span className={styles.heightSeparator}>in</span>
+                            </div>
+                        ) : (
+                            <input
+                                type="number"
+                                min="0"
+                                max="300"
+                                value={heightCm}
+                                onChange={e => setHeightCm(e.target.value)}
+                                placeholder="178"
+                                className={styles.input}
+                            />
+                        )}
+                    </div>
+
+                    {/* Activity Level */}
+                    <div className={styles.inputGroup} style={{ gridColumn: '1 / -1' }}>
+                        <label>Activity Level</label>
+                        <div className={styles.selectWrapper}>
+                            <select
+                                value={activityLevel}
+                                onChange={e => setActivityLevel(e.target.value)}
+                                className={`${styles.input} ${styles.selectInput}`}
+                            >
+                                <option value="">Select activity level...</option>
+                                {ACTIVITY_MULTIPLIERS.map(m => (
+                                    <option key={m.value} value={m.value}>
+                                        {m.label} — {m.description}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Goal Strategy */}
                     <div className={styles.inputGroup} style={{ gridColumn: '1 / -1' }}>
                         <label style={{ marginBottom: '0.25rem' }}>Goal Strategy</label>
                         <div className={styles.toggleContainer}>

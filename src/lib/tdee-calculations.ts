@@ -1,6 +1,6 @@
-import { DailyEntry } from "./firebase/firestore";
+import { DailyEntry, UserSettings } from "./firebase/firestore";
 import { calculateLinearRegression } from "./math-utils";
-import { CALORIES_PER_POUND, MIN_ENTRIES_FOR_TDEE, ANALYSIS_PERIOD_DAYS } from "./constants";
+import { CALORIES_PER_POUND, MIN_ENTRIES_FOR_TDEE, ANALYSIS_PERIOD_DAYS, LBS_TO_KG } from "./constants";
 
 export interface TDEEResult {
     tdee: number;
@@ -48,6 +48,27 @@ export const calculateTDEE = (entries: DailyEntry[]): TDEEResult | null => {
         weightTrend: Number((slope * 7).toFixed(2)) // lbs per week
     };
 };
+
+/**
+ * Calculates TDEE using the Mifflin-St Jeor formula.
+ * Used during the setup phase when adaptive data is unreliable.
+ *
+ * Male:   BMR = (10 × weight_kg) + (6.25 × height_cm) - (5 × age) + 5
+ * Female: BMR = (10 × weight_kg) + (6.25 × height_cm) - (5 × age) - 161
+ * TDEE = BMR × activityLevel
+ */
+export function calculateFormulaTDEE(settings: UserSettings, currentWeight?: number): number | null {
+    if (!settings.sex || !settings.age || !settings.heightCm || !settings.activityLevel) return null;
+
+    const weight = currentWeight ?? settings.startingWeight;
+    const weightKg = settings.units === 'kg' ? weight : weight * LBS_TO_KG;
+
+    const bmr = settings.sex === 'male'
+        ? (10 * weightKg) + (6.25 * settings.heightCm) - (5 * settings.age) + 5
+        : (10 * weightKg) + (6.25 * settings.heightCm) - (5 * settings.age) - 161;
+
+    return Math.round(bmr * settings.activityLevel);
+}
 
 export const getWeightTrend = (entries: DailyEntry[]) => {
     // Helper to just get the trend for the UI graph
