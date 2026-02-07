@@ -137,5 +137,60 @@ describe("tdee-calculator", () => {
             // Current 175 < goal 180, already passed goal
             expect(result.weeksToGoal).toBe(0);
         });
+
+        it("should compute targetCalories as tdee + targetDeficit", () => {
+            const entries = createEntries(14, 185, 0, 2100);
+            const result = calculateStats(entries, baseSettings);
+            expect(result.targetCalories).toBe(result.tdee + result.targetDeficit);
+        });
+
+        it("should return a valid goalDate string", () => {
+            const entries = createEntries(10, 195, -0.1, 2000);
+            const settings: UserSettings = {
+                ...baseSettings,
+                goalWeight: 180,
+                weeklyGoal: -1,
+            };
+            const result = calculateStats(entries, settings);
+            // goalDate should be parseable as a date
+            expect(new Date(result.goalDate).toString()).not.toBe("Invalid Date");
+        });
+
+        it("should handle empty entries with fallback weight and TDEE", () => {
+            const result = calculateStats([], baseSettings);
+            // Falls back to startingWeight
+            expect(result.currentWeight).toBe(200);
+            expect(result.totalLost).toBe(0);
+            // Fallback TDEE: weight * 14 = 2800
+            expect(result.tdee).toBeCloseTo(2800, -2);
+        });
+
+        it("should return 0 weeksToGoal for maintain goal (weeklyGoal = 0)", () => {
+            const entries = createEntries(10, 185, 0, 2200);
+            const maintainSettings: UserSettings = {
+                ...baseSettings,
+                goal: "maintain",
+                goalWeight: 185,
+                weeklyGoal: 0,
+            };
+            const result = calculateStats(entries, maintainSettings);
+            expect(result.weeksToGoal).toBe(0);
+        });
+
+        it("should use formula TDEE during setup phase", () => {
+            // startDate is today → in setup phase
+            const today = new Date().toISOString().split("T")[0];
+            const entries = createEntries(10, 180, 0, 2000);
+            const setupSettings: UserSettings = {
+                ...baseSettings,
+                startDate: today,
+                startingWeight: 180,
+                goalWeight: 170,
+            };
+            const result = calculateStats(entries, setupSettings);
+            // During setup phase, formula TDEE is used (or fallback if no body stats)
+            // Fallback: 180 * 14 = 2520
+            expect(result.tdee).toBeCloseTo(2520, -2);
+        });
     });
 });

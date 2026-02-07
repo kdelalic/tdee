@@ -6,6 +6,9 @@ import {
     formatYYYYMMDD,
     getTodayString,
     isFutureDate,
+    getWeekStart,
+    getMonthStart,
+    formatDisplayDate,
 } from "../date-utils";
 
 // Helper to create a date string N days ago
@@ -119,6 +122,97 @@ describe("date-utils", () => {
 
         it("should return true for future dates", () => {
             expect(isFutureDate("2099-12-31")).toBe(true);
+        });
+    });
+
+    describe("formatYYYYMMDD", () => {
+        it("should format a date with zero-padded month and day", () => {
+            const date = new Date(2024, 0, 5, 12, 0, 0); // Jan 5
+            expect(formatYYYYMMDD(date)).toBe("2024-01-05");
+        });
+
+        it("should format a date with double-digit month and day", () => {
+            const date = new Date(2024, 11, 25, 12, 0, 0); // Dec 25
+            expect(formatYYYYMMDD(date)).toBe("2024-12-25");
+        });
+
+        it("should handle year boundaries", () => {
+            const date = new Date(2025, 0, 1, 12, 0, 0); // Jan 1 2025
+            expect(formatYYYYMMDD(date)).toBe("2025-01-01");
+        });
+    });
+
+    describe("getTodayString", () => {
+        it("should return today in YYYY-MM-DD format", () => {
+            const result = getTodayString();
+            expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        });
+
+        it("should match formatYYYYMMDD(new Date())", () => {
+            expect(getTodayString()).toBe(formatYYYYMMDD(new Date()));
+        });
+    });
+
+    describe("getWeekStart", () => {
+        it("should return the previous Sunday for a midweek date", () => {
+            // Wednesday Jan 10, 2024
+            const wed = new Date(2024, 0, 10);
+            const result = getWeekStart(wed);
+            expect(result.getDay()).toBe(0); // Sunday
+            expect(result.getDate()).toBe(7);
+        });
+
+        it("should return the same day when given a Sunday", () => {
+            // Sunday Jan 7, 2024
+            const sun = new Date(2024, 0, 7);
+            const result = getWeekStart(sun);
+            expect(result.getDay()).toBe(0);
+            expect(result.getDate()).toBe(7);
+        });
+
+        it("should handle month boundary correctly", () => {
+            // Tuesday Feb 1, 2024 → Sunday Jan 28
+            const tue = new Date(2024, 1, 1);
+            const result = getWeekStart(tue);
+            expect(result.getDay()).toBe(0);
+            expect(result.getMonth()).toBe(0); // January
+            expect(result.getDate()).toBe(28);
+        });
+    });
+
+    describe("getMonthStart", () => {
+        it("should return the first of the month", () => {
+            const mid = new Date(2024, 5, 15);
+            const result = getMonthStart(mid);
+            expect(result.getDate()).toBe(1);
+            expect(result.getMonth()).toBe(5);
+            expect(result.getFullYear()).toBe(2024);
+        });
+
+        it("should return the same date if already the first", () => {
+            const first = new Date(2024, 3, 1);
+            const result = getMonthStart(first);
+            expect(result.getDate()).toBe(1);
+            expect(result.getMonth()).toBe(3);
+        });
+    });
+
+    describe("formatDisplayDate", () => {
+        it("should format with default options (short month + day)", () => {
+            const result = formatDisplayDate("2024-06-15");
+            expect(result).toContain("Jun");
+            expect(result).toContain("15");
+        });
+
+        it("should accept custom format options", () => {
+            const result = formatDisplayDate("2024-12-25", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+            });
+            expect(result).toContain("December");
+            expect(result).toContain("25");
+            expect(result).toContain("Wednesday");
         });
     });
 });

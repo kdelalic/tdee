@@ -8,7 +8,8 @@ const config = {
     testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
     collectCoverageFrom: [
         'src/lib/**/*.ts',
-        '!src/lib/firebase/**',
+        '!src/lib/firebase/firebase.ts',
+        '!src/lib/firebase/firestore.ts',
     ],
     coverageDirectory: 'coverage',
     coverageReporters: ['text', 'lcov'],
