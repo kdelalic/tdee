@@ -102,3 +102,28 @@ export function formatDisplayDate(
     const date = parseYYYYMMDD(dateString);
     return date.toLocaleDateString("en-US", options);
 }
+
+/**
+ * Gets the number of days since the user started tracking.
+ *
+ * @param startDate - Start date in YYYY-MM-DD format
+ * @returns Number of days since start (0 if no startDate)
+ */
+export function daysSinceStart(startDate: string | undefined): number {
+    if (!startDate) return 0;
+    return Math.max(0, daysBetween(startDate, getTodayString()));
+}
+
+/**
+ * Checks if the user is still in the initial setup phase.
+ * During this period, TDEE estimates are unreliable due to water weight
+ * and glycogen refill fluctuations.
+ *
+ * @param startDate - Start date in YYYY-MM-DD format
+ * @param setupDays - Number of days in setup phase
+ * @returns True if user is still in setup phase
+ */
+export function isInSetupPhase(startDate: string | undefined, setupDays: number): boolean {
+    if (!startDate) return false;
+    return daysSinceStart(startDate) < setupDays;
+}

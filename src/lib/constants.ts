@@ -24,3 +24,7 @@ export const DEFAULT_TDEE_DOMAIN = {
 // Time constants
 export const DAYS_PER_WEEK = 7;
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+// Setup phase duration (water/glycogen refill period)
+// TDEE estimates are unreliable during this initial period
+export const SETUP_PHASE_DAYS = 14;

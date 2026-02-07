@@ -14,9 +14,9 @@ import {
     ReferenceLine,
 } from "recharts";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
-import { parseYYYYMMDD, daysBetween } from "@/lib/date-utils";
+import { parseYYYYMMDD, daysBetween, isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
 import { calculateLinearRegression, calculateTrendLine, DataPoint } from "@/lib/math-utils";
-import { CALORIES_PER_POUND } from "@/lib/constants";
+import { CALORIES_PER_POUND, SETUP_PHASE_DAYS } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
 // Tooltip types and component extracted outside for performance
@@ -313,6 +313,15 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
             Math.abs(weeklyRate.actualRate) <= Math.abs(settings.weeklyGoal) * 1.5;
     }, [weeklyRate?.actualRate, settings?.weeklyGoal]);
 
+    // Check if user is in setup phase (first 2 weeks - glycogen refill period)
+    const inSetupPhase = useMemo(() => {
+        return isInSetupPhase(settings?.startDate, SETUP_PHASE_DAYS);
+    }, [settings?.startDate]);
+
+    const currentDayNumber = useMemo(() => {
+        return daysSinceStart(settings?.startDate);
+    }, [settings?.startDate]);
+
     if (!entries || entries.length < 2) {
         return (
             <div className={styles.card}>
@@ -337,7 +346,22 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
             {weeklyRate && settings && (
                 <div className={styles.weeklyRateContainer}>
                     <h3 className={styles.weeklyRateHeader}>Weekly Rate of Change</h3>
-                    <div className={styles.weeklyRateGrid}>
+
+                    {/* Setup Phase Banner - shown during first 2 weeks */}
+                    {inSetupPhase && (
+                        <div className={styles.setupPhaseBanner}>
+                            <div className={styles.setupPhaseIcon}>📊</div>
+                            <div className={styles.setupPhaseContent}>
+                                <strong>Building Your Baseline</strong>
+                                <p>
+                                    Day {currentDayNumber + 1} of {SETUP_PHASE_DAYS} — TDEE estimates become accurate after glycogen levels stabilize.
+                                    Keep logging consistently!
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className={styles.weeklyRateGrid} style={inSetupPhase ? { opacity: 0.5 } : undefined}>
                         {/* Actual Rate */}
                         <div className={styles.rateItem}>
                             <span className={styles.rateLabel}>Actual</span>
@@ -346,7 +370,7 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                     <span style={{
                                         fontSize: '1.5rem',
                                         fontWeight: 700,
-                                        color: isOnTrack ? 'var(--success)' : 'var(--warning, #f59e0b)'
+                                        color: inSetupPhase ? 'var(--text-secondary)' : (isOnTrack ? 'var(--success)' : 'var(--warning, #f59e0b)')
                                     }}>
                                         {weeklyRate.actualRate > 0 ? '+' : ''}{weeklyRate.actualRate.toFixed(2)}
                                     </span>
@@ -372,9 +396,9 @@ export default function ChartsOverview({ entries, settings }: ChartsOverviewProp
                                 </span>
                             </div>
                         </div>
-                        {/* Status */}
+                        {/* Status - Hidden during setup phase */}
                         <div style={{ flex: 1, minWidth: '140px', display: 'flex', alignItems: 'center' }}>
-                            {weeklyRate.actualRate !== null && (
+                            {weeklyRate.actualRate !== null && !inSetupPhase && (
                                 <span className={styles.rateStatusBadge} style={{
                                     background: isOnTrack ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                                     color: isOnTrack ? 'var(--success)' : 'var(--warning, #f59e0b)'

@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { DailyEntry, UserSettings } from "@/lib/firebase/firestore";
 import { calculateStats, TDEEStats } from "@/lib/tdee-calculator";
+import { isInSetupPhase, daysSinceStart } from "@/lib/date-utils";
+import { SETUP_PHASE_DAYS } from "@/lib/constants";
 import styles from "./Dashboard.module.css";
 
 interface StatsSummaryProps {
@@ -136,7 +138,11 @@ export default function StatsSummary({ entries, settings }: StatsSummaryProps) {
                         <div className={styles.statFooter}>
                             {stats.weeksToGoal} Weeks until you reach your goal weight
                             <br />
-                            {entries.length < 28 && (
+                            {isInSetupPhase(settings.startDate, SETUP_PHASE_DAYS) ? (
+                                <span className={styles.statAccuracyNote}>
+                                    📊 Day {daysSinceStart(settings.startDate) + 1} of {SETUP_PHASE_DAYS}: Building baseline — estimates stabilize after glycogen levels settle.
+                                </span>
+                            ) : entries.length < 28 && (
                                 <span className={styles.statAccuracyNote}>
                                     Numbers take 3-4 weeks to stabilize and become accurate.
                                 </span>
